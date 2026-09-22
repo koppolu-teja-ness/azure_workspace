@@ -3,6 +3,9 @@
 # Required: Static validation (cfn-lint)
 cfn-lint>=1.57.0
 
+# Required: renders the migration plan into CloudFormation YAML
+pyyaml>=6.0
+
 # Required: AWS Bedrock LLM calls (only needed for full run, not --dry-run)
 boto3>=1.28.0
 

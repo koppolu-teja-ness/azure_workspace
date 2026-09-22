@@ -1,15 +1,31 @@
-"""End-to-end pipeline: Bicep file -> CloudFormation YAML, with static validation
-and a self-correction loop that feeds cfn-lint errors back to the generator.
+"""End-to-end pipeline: Bicep -> Parser/Discovery -> Cloud-Neutral Representation
+-> LLM reasoning (Migration Plan) -> CloudFormation Generator, with static
+validation and a self-correction loop that feeds cfn-lint errors back into the
+migration plan.
+
+Deliberately NOT a single "Bicep -> CloudFormation" LLM call: the LLM only ever
+reasons over the cloud-neutral representation and returns a structured migration
+plan; rendering that plan into CFN template syntax is a separate, deterministic
+step. That split is what lets us add new source parsers or new target generators
+independently later.
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from .bicep_compiler import BicepCompilerError, compile_bicep_to_arm
+from .cfn_generator import generate_cloudformation
+from .cloud_neutral import CloudNeutralRepresentation, build_cnr
 from .config import Config
-from .generator import Generator, GeneratorNotConfiguredError, build_prompt
+from .generator import Generator, GeneratorNotConfiguredError
 from .knowledge_base import KnowledgeBase
+from .migration_plan import (
+    MigrationPlan,
+    MigrationPlanError,
+    PLAN_JSON_SCHEMA_HINT,
+    build_migration_plan_prompt,
+    parse_migration_plan,
+)
 from .resource_extractor import extract_resource_types
 from .validator import run_cfn_lint
 
@@ -19,12 +35,19 @@ class UnmappedResourceError(RuntimeError):
 
 
 class PipelineResult:
-    def __init__(self, resource_types: list[str], output_path: Path | None,
-                 lint_passed: bool | None, lint_output: str | None):
+    def __init__(
+        self,
+        resource_types: list[str],
+        output_path: Path | None,
+        lint_passed: bool | None,
+        lint_output: str | None,
+        migration_plan: MigrationPlan | None = None,
+    ):
         self.resource_types = resource_types
         self.output_path = output_path
         self.lint_passed = lint_passed
         self.lint_output = lint_output
+        self.migration_plan = migration_plan
 
 
 def run_pipeline(
@@ -35,7 +58,7 @@ def run_pipeline(
     config: Config,
     dry_run: bool = False,
 ) -> PipelineResult:
-    # 1. Compile Bicep -> ARM JSON (stable structure to parse resource types from)
+    # 1. Parser/Discovery: compile Bicep -> ARM JSON (stable structure to parse)
     arm_template = compile_bicep_to_arm(bicep_path)
 
     # 2. Identify resource types in use
@@ -57,30 +80,47 @@ def run_pipeline(
             "No generator configured. Set up Bedrock credentials or pass --dry-run."
         )
 
-    mapping_docs = knowledge_base.load_docs(resource_types)
-    bicep_source = bicep_path.read_text(encoding="utf-8")
-    arm_json_text = json.dumps(arm_template, indent=2)
+    # 4. Cloud-Neutral Representation: normalize out of Bicep/ARM-specific shape
+    cnr: CloudNeutralRepresentation = build_cnr(arm_template)
 
-    prompt = build_prompt(bicep_source, arm_json_text, mapping_docs, resource_types)
-    yaml_text = generator.generate(prompt)
+    # 5-7. LLM reasoning -> Migration Plan -> deterministic CFN render -> cfn-lint,
+    # with a unified retry loop: both invalid plans (e.g. undeclared conditions)
+    # and lint failures are fed back to the LLM as a corrected-plan request.
+    mapping_docs = knowledge_base.load_docs(resource_types)
+    prompt = build_migration_plan_prompt(cnr, mapping_docs)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"{bicep_path.stem}.generated.yaml"
-    output_path.write_text(yaml_text, encoding="utf-8")
-
-    lint_passed, lint_output = run_cfn_lint(output_path)
 
     attempts = 0
-    while not lint_passed and attempts < config.max_fix_attempts:
-        attempts += 1
-        fix_prompt = (
-            f"The CloudFormation template you generated failed cfn-lint with the "
-            f"following output:\n\n{lint_output}\n\nHere is the template:\n\n"
-            f"```yaml\n{yaml_text}\n```\n\nFix the issues and return the complete "
-            f"corrected YAML template only."
-        )
-        yaml_text = generator.generate(fix_prompt)
+    while True:
+        raw_plan_text = generator.generate(prompt)
+        try:
+            plan = parse_migration_plan(raw_plan_text)
+        except MigrationPlanError as exc:
+            if attempts >= config.max_fix_attempts:
+                raise
+            attempts += 1
+            prompt = (
+                f"Your migration plan was invalid: {exc}\n\n"
+                f"Here is the plan JSON you produced:\n```json\n{raw_plan_text}\n```\n\n"
+                f"Return a corrected migration plan fixing this.\n\n{PLAN_JSON_SCHEMA_HINT}"
+            )
+            continue
+
+        yaml_text = generate_cloudformation(plan)
         output_path.write_text(yaml_text, encoding="utf-8")
         lint_passed, lint_output = run_cfn_lint(output_path)
 
-    return PipelineResult(resource_types, output_path, lint_passed, lint_output)
+        if lint_passed or attempts >= config.max_fix_attempts:
+            break
+        attempts += 1
+        prompt = (
+            f"The CloudFormation template rendered from your migration plan failed "
+            f"cfn-lint with the following output:\n\n{lint_output}\n\n"
+            f"Here is the migration plan JSON you produced:\n```json\n{raw_plan_text}\n```\n\n"
+            f"Here is the rendered template for reference:\n```yaml\n{yaml_text}\n```\n\n"
+            f"Return a corrected migration plan fixing these issues.\n\n{PLAN_JSON_SCHEMA_HINT}"
+        )
+
+    return PipelineResult(resource_types, output_path, lint_passed, lint_output, plan)

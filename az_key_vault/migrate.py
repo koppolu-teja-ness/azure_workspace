@@ -18,6 +18,7 @@ from orchestrator.bicep_compiler import BicepCompilerError
 from orchestrator.config import Config
 from orchestrator.generator import BedrockGenerator, GeneratorNotConfiguredError
 from orchestrator.knowledge_base import KnowledgeBase
+from orchestrator.migration_plan import MigrationPlanError
 from orchestrator.pipeline import UnmappedResourceError, run_pipeline
 
 REPO_ROOT = Path(__file__).parent
@@ -62,7 +63,7 @@ def main() -> int:
             config=config,
             dry_run=args.dry_run,
         )
-    except (BicepCompilerError, UnmappedResourceError, GeneratorNotConfiguredError) as exc:
+    except (BicepCompilerError, UnmappedResourceError, GeneratorNotConfiguredError, MigrationPlanError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
