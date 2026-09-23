@@ -159,69 +159,37 @@ MAX_FIX_ATTEMPTS=2                                          # Retry limit on err
 
 ### Pipeline Architecture
 
-The migration follows a four-stage architecture:
+The migration follows a four-stage architecture, with LLM reasoning kept strictly
+separate from CloudFormation syntax generation:
 
-#### 1. **Compile & Extract** (Deterministic)
-```
-Bicep file
-    ↓
-az bicep build (Azure CLI)
-    ↓
-ARM JSON (*.json)
-    ↓
-Resource Extractor
-    ↓
-List of resource types
-    ↓
-Knowledge Base Lookup
-```
+```mermaid
+flowchart TD
+    A[Bicep file] -->|az bicep build| B[ARM JSON]
+    B --> C[Resource Extractor]
+    C --> D{All types in\nKnowledge Base?}
+    D -- No --> D1[UnmappedResourceError\nexit non-zero]
+    D -- Yes --> E["cloud_neutral.build_cnr()\nCNR: params + resources + metadata"]
+    E --> F[["AWS Bedrock LLM\n(reasoning only)"]]
+    KB[(knowledge_base/\nmapping docs)] --> F
+    F --> G["Migration Plan (JSON)\nresources, conditions, outputs, params"]
+    G --> H["cfn_generator.generate_cloudformation()\n(deterministic, no LLM)"]
+    H --> I[CloudFormation YAML]
+    I --> J[cfn-lint validation]
+    J -- fail --> K{"attempts < MAX_FIX_ATTEMPTS?"}
+    K -- yes --> F
+    K -- no --> L[Error: exit non-zero]
+    J -- pass --> M[output/main.generated.yaml]
 
-#### 2. **Build Cloud-Neutral Representation** (Deterministic)
-```
-ARM JSON
-    ↓
-cloud_neutral.build_cnr()
-    ↓
-CNR (Language-agnostic resource model)
-  - CNRParameters
-  - CNRResources
-  - Metadata
+    style D1 fill:#f8d7da,stroke:#c0392b
+    style L fill:#f8d7da,stroke:#c0392b
+    style M fill:#d4edda,stroke:#2e7d32
+    style F fill:#e2e3ff,stroke:#5b5bd6
 ```
 
-#### 3. **LLM Reasoning** (Non-Deterministic)
-```
-Bicep source
-    ↓
-ARM JSON
-    ↓
-CNR
-    ↓
-Migration knowledge docs (from KB)
-    ↓
-→ AWS Bedrock LLM
-    ↓
-Migration Plan (JSON)
-  - Planned resources
-  - Conditions
-  - Outputs
-  - Parameters
-```
-
-The LLM only generates *reasoning* (structured JSON), not CloudFormation syntax. This keeps template syntax logic in deterministic code.
-
-#### 4. **Deterministic Generation** (Deterministic)
-```
-Migration Plan (JSON)
-    ↓
-cfn_generator.generate_cloudformation()
-    ↓
-CloudFormation YAML
-    ↓
-cfn-lint validation
-    ↓
-[If errors] Feed back to LLM for corrected plan
-[If valid] → output/main.generated.yaml
-```
+- **Deterministic** stages (compile, extract, CNR build, YAML render, lint): steps B, C, E,
+  H, I, J.
+- **Non-deterministic** stage (LLM reasoning): step F — it only ever emits structured JSON
+  (the Migration Plan), never CloudFormation syntax directly.
 
 ### Self-Correction Loop
 
