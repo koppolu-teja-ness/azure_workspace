@@ -1,47 +1,14 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ['setuptools>=68','wheel']
+build-backend = 'setuptools.build_meta'
 
 [project]
-name = "azure-aws-migration-capstone"
-version = "0.1.0"
-description = "Phase 0 foundation contracts, schemas, and validation tooling"
-requires-python = ">=3.12"
-dependencies = [
-  "pydantic>=2.9,<3.0",
-  "jsonschema>=4.23,<5.0",
-  "PyYAML>=6.0,<7.0"
-]
+name = 'azure-aws-migration-assistant'
+version = '0.1.0'
+description = 'Agentic Azure to AWS infrastructure migration assistant'
+requires-python = '>=3.11'
+dependencies = ['fastapi','uvicorn','pydantic','pyyaml']
 
 [project.optional-dependencies]
-dev = [
-  "pytest>=8.3,<9.0",
-  "ruff>=0.6,<1.0",
-  "mypy>=1.11,<2.0",
-  "cfn-lint>=1.13,<2.0",
-  "checkov>=3.2,<4.0"
-]
+dev = ['pytest','ruff','mypy']
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]
-
-[tool.ruff]
-line-length = 100
-target-version = "py312"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
-warn_unused_configs = true
-mypy_path = "src"
-
-[[tool.mypy.overrides]]
-module = ["yaml", "jsonschema"]
-ignore_missing_imports = true

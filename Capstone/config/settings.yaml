@@ -1,0 +1,6 @@
+project:
+  naming_prefix: mig
+  default_tags:
+    owner: platform
+    environment: dev
+

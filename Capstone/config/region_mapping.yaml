@@ -1,0 +1,4 @@
+azure_to_aws:
+  eastus: us-east-1
+  westus2: us-west-2
+

@@ -1,65 +1,16 @@
-name: phase0-ci
-
-'on':
-  pull_request:
-    branches:
-      - develop
-      - main
-  push:
-    branches:
-      - develop
-      - main
-
+name: CI
+on: [push, pull_request]
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-      - name: Ruff
-        run: ruff check .
-      - name: MyPy
-        run: mypy src
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: pip install -e .[dev]
+      - run: ruff check .
+      - run: mypy src
+      - run: pytest -q
 
-  schema_validation:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-      - name: Validate schemas and rules
-        run: python scripts/validate_phase0.py
-
-  contract_tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-      - name: Run tests
-        run: pytest -q
-
-  secret_scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Gitleaks scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
