@@ -1,0 +1,19 @@
+id: vn-003
+azureResourceType: Microsoft.Network/networkSecurityGroups
+awsResourceType: AWS::EC2::SecurityGroup + AWS::EC2::NetworkAcl
+propertyMappings:
+  - source: securityRules
+    target: SecurityGroupIngress/SecurityGroupEgress + NACL rules
+    notes: Stateful vs stateless behavior must be preserved with rule decomposition.
+preconditions:
+  - Rule priorities are available and complete.
+securityConstraints:
+  - No 0.0.0.0/0 admin ports without explicit exception.
+knownIncompatibilities:
+  - NSG is stateful while NACL is stateless and ordered.
+fallbackStrategy: Prefer SG for stateful controls and add NACL only where needed.
+confidenceScore: 0.83
+citations:
+  - https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview
+  - https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html
+mappingQuality: approximate

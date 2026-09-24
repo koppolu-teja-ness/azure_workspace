@@ -1,0 +1,16 @@
+id: invalid-002
+azureResourceType: Microsoft.KeyVault/vaults
+awsResourceType: AWS::SecretsManager::Secret
+propertyMappings:
+  - source: a
+    target: b
+    notes: test
+preconditions: []
+securityConstraints: []
+knownIncompatibilities:
+  - one
+fallbackStrategy: manual
+confidenceScore: 0.7
+citations:
+  - https://example.org
+mappingQuality: perfect

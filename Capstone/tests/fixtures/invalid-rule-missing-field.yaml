@@ -1,0 +1,14 @@
+id: invalid-001
+azureResourceType: Microsoft.KeyVault/vaults
+awsResourceType: AWS::SecretsManager::Secret
+propertyMappings:
+  - source: properties.enablePurgeProtection
+    target: RecoveryWindowInDays
+    notes: test
+preconditions: []
+securityConstraints: []
+knownIncompatibilities: []
+fallbackStrategy: manual
+confidenceScore: 0.7
+citations:
+  - https://example.org

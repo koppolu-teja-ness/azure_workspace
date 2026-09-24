@@ -1,0 +1,14 @@
+pyproject.toml
+src/azure_aws_migration_capstone.egg-info/PKG-INFO
+src/azure_aws_migration_capstone.egg-info/SOURCES.txt
+src/azure_aws_migration_capstone.egg-info/dependency_links.txt
+src/azure_aws_migration_capstone.egg-info/requires.txt
+src/azure_aws_migration_capstone.egg-info/top_level.txt
+src/shared/__init__.py
+src/shared/risk.py
+src/shared/security.py
+src/shared/contracts/__init__.py
+src/shared/contracts/consumer.py
+src/shared/contracts/models.py
+src/shared/contracts/rules.py
+src/shared/contracts/spec.py

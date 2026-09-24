@@ -1,0 +1,19 @@
+id: vn-002
+azureResourceType: Microsoft.Network/virtualNetworks/subnets
+awsResourceType: AWS::EC2::Subnet
+propertyMappings:
+  - source: properties.addressPrefix
+    target: CidrBlock
+    notes: Preserve subnet CIDR and AZ mapping intent.
+preconditions:
+  - Availability zone mapping table is defined.
+securityConstraints:
+  - Public IP assignment must default to disabled unless explicitly required.
+knownIncompatibilities:
+  - Subnet delegation and service endpoint behavior are not always equivalent.
+fallbackStrategy: Flag delegated subnets for manual conversion.
+confidenceScore: 0.84
+citations:
+  - https://learn.microsoft.com/azure/virtual-network/subnet-delegation-overview
+  - https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html
+mappingQuality: approximate

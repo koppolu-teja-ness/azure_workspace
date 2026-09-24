@@ -1,0 +1,41 @@
+{
+  "specVersion": "1.0.0",
+  "source": {
+    "provider": "azure",
+    "subscriptionId": "sub-001",
+    "region": "eastus"
+  },
+  "target": {
+    "provider": "aws",
+    "accountId": "123456789012",
+    "region": "us-east-1"
+  },
+  "resources": [
+    {
+      "id": "func-004",
+      "serviceArea": "Functions",
+      "sourceType": "Microsoft.Web/sites",
+      "targetType": "AWS::Lambda::Function",
+      "name": "bad-decision",
+      "decision": "safe",
+      "properties": {"runtime": "python3.12"}
+    }
+  ],
+  "dependencies": [],
+  "risk": {
+    "overallScore": 10,
+    "classification": "auto-migratable",
+    "dimensions": {
+      "identityExposure": 5,
+      "networkExposure": 10,
+      "unsupportedMappingRisk": 10,
+      "blastRadius": 5
+    }
+  },
+  "validationHints": [],
+  "traceability": {
+    "sourceCommit": "1234567",
+    "generatedAt": "2026-09-24T09:00:00Z",
+    "generatedBy": "test"
+  }
+}

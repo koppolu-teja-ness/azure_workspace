@@ -1,0 +1,66 @@
+{
+  "specVersion": "1.0.2",
+  "source": {
+    "provider": "azure",
+    "subscriptionId": "sub-001",
+    "region": "eastus2"
+  },
+  "target": {
+    "provider": "aws",
+    "accountId": "123456789012",
+    "region": "us-east-2"
+  },
+  "resources": [
+    {
+      "id": "vnet-003",
+      "serviceArea": "VNet",
+      "sourceType": "Microsoft.Network/virtualNetworks",
+      "targetType": "AWS::EC2::VPC",
+      "name": "onprem-connected-vnet",
+      "decision": "needs-review",
+      "properties": {
+        "cidr": "10.30.0.0/16",
+        "expressRouteAttached": true,
+        "peerings": ["onprem-hub"]
+      },
+      "notes": "ExpressRoute mapping is manual-required"
+    },
+    {
+      "id": "func-003",
+      "serviceArea": "Functions",
+      "sourceType": "Microsoft.Web/sites",
+      "targetType": "AWS::Lambda::Function",
+      "name": "queue-worker",
+      "decision": "auto-migratable",
+      "properties": {
+        "runtime": "dotnet8",
+        "triggers": ["queue"]
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "func-003",
+      "to": "vnet-003",
+      "kind": "network-placement"
+    }
+  ],
+  "risk": {
+    "overallScore": 55,
+    "classification": "needs-review",
+    "dimensions": {
+      "identityExposure": 35,
+      "networkExposure": 60,
+      "unsupportedMappingRisk": 75,
+      "blastRadius": 50
+    }
+  },
+  "validationHints": [
+    "flag unsupported network edge"
+  ],
+  "traceability": {
+    "sourceCommit": "ac02dea",
+    "generatedAt": "2026-09-24T09:24:00Z",
+    "generatedBy": "mapping-agent"
+  }
+}

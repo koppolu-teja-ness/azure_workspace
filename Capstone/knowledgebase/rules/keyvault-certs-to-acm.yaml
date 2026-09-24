@@ -1,0 +1,19 @@
+id: kv-003
+azureResourceType: Microsoft.KeyVault/vaults/certificates
+awsResourceType: AWS::CertificateManager::Certificate
+propertyMappings:
+  - source: policy.x509_props.subject
+    target: DomainName
+    notes: Subject common name maps to certificate domain.
+preconditions:
+  - Certificate is exportable or re-issuable from source CA.
+securityConstraints:
+  - Private keys must not pass through LLM prompts.
+knownIncompatibilities:
+  - Direct certificate private key export may be restricted.
+fallbackStrategy: Re-issue in ACM with DNS validation and track as manual cutover.
+confidenceScore: 0.7
+citations:
+  - https://learn.microsoft.com/azure/key-vault/certificates/about-certificates
+  - https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html
+mappingQuality: manual-required

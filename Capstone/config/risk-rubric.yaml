@@ -1,0 +1,14 @@
+weights:
+  identityExposure: 0.30
+  networkExposure: 0.30
+  unsupportedMappingRisk: 0.25
+  blastRadius: 0.15
+
+thresholds:
+  autoMigratableMax: 30.0
+  needsReviewMax: 65.0
+
+classificationLabels:
+  - auto-migratable
+  - needs-review
+  - high-risk

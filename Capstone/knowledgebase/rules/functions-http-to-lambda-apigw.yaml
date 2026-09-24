@@ -1,0 +1,19 @@
+id: fn-001
+azureResourceType: Microsoft.Web/sites/functions/httpTrigger
+awsResourceType: AWS::Lambda::Function + AWS::ApiGatewayV2::Api
+propertyMappings:
+  - source: authLevel
+    target: Authorizer
+    notes: Anonymous endpoints require explicit review and protection.
+preconditions:
+  - Function runtime is supported in Lambda.
+securityConstraints:
+  - Public routes require WAF or auth strategy.
+knownIncompatibilities:
+  - Function host-level auth behavior differs from API Gateway defaults.
+fallbackStrategy: Deploy private API by default and require manual approval for public mode.
+confidenceScore: 0.88
+citations:
+  - https://learn.microsoft.com/azure/azure-functions/functions-bindings-http-webhook
+  - https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html
+mappingQuality: approximate

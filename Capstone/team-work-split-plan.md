@@ -7,22 +7,26 @@
 
 | Branch | Owner | Focus |
 |---|---|---|
-| `feature/source-pipeline` | Person A | Azure-understanding side: discovery, parsing, mapping, planning, approval UI |
-| `feature/target-pipeline` | Person B | AWS-generation side: CloudFormation generation, validation, deployment, testing |
+| `feature/source-pipeline` | Person A (`koppolu-teja-ness`) | Azure-understanding side: discovery, parsing, mapping, planning, approval UI |
+| `feature/target-pipeline` | Person B (`saurav-das-ness`) | AWS-generation side: CloudFormation generation, validation, deployment, testing |
 
 The two branches meet at one shared contract — a **Migration Spec** (JSON) that Person A's pipeline produces and Person B's pipeline consumes. Agreeing on this schema in Phase 0 is what allows both people to work in parallel without blocking each other.
 
 ---
 
-## Phase 0 — Foundations (Joint)
+## Phase 0 — Foundations (Ownership Split)
 
-Both team members work together before splitting:
+### Person A (`koppolu-teja-ness`) (Azure-only focus)
+- Define Azure-side source representation in the Migration Spec JSON schema.
+- Define Azure-side mapping requirements and edge cases in the RAG rule schema.
+- Provision and validate Azure sandbox access and discovery permissions.
+- Validate Azure-related fixture realism for Key Vault, Functions, and VNet inputs.
 
-- Agree on the Migration Spec JSON schema (the resource-graph representation passed between pipelines)
-- Agree on the RAG knowledge base schema (mapping rule format)
-- Set up repo scaffold, branching strategy, and CI base
-- Set up the LangGraph skeleton and shared agent interfaces
-- Provision sandbox Azure and AWS accounts
+### Person B (`saurav-das-ness`) (AWS-only focus)
+- Define AWS-side target representation and consumer expectations in the Migration Spec JSON schema.
+- Define AWS-side mapping quality and generation constraints in the RAG rule schema.
+- Set up CI baseline, schema/contract gates, and AWS-oriented validation tooling.
+- Provision and validate AWS sandbox access and deployment permissions.
 
 ---
 
@@ -74,16 +78,18 @@ Both team members work together before splitting:
 
 ---
 
-## Phase 4 — Integration & Polish (Joint)
+## Phase 4 — Integration & Polish (Ownership Split)
 
-Both team members work together to close out the capstone:
+### Person A (`koppolu-teja-ness`) (Azure-only focus)
+- Validate Azure discovery completeness and Azure-to-spec traceability before final merge.
+- Finalize source-side documentation for Azure assumptions and unsupported constructs.
+- Support end-to-end validation only for Azure source correctness and parity inputs.
 
-- Merge `develop` into `main`
-- Run the full end-to-end pipeline across all three services (Key Vault, Functions, VNet)
-- Integrate FastAPI backend with the dashboard
-- Package with Docker and finalize the CI/CD pipeline
-- Write documentation and architecture diagram
-- Record the final demonstration video
+### Person B (`saurav-das-ness`) (AWS-only focus)
+- Merge `develop` into `main` after required CI checks pass.
+- Run AWS-side generation, deployment, and validation for all in-scope services.
+- Finalize Docker/CI-CD packaging and target-side runtime checks.
+- Finalize deployment, validation, and operations documentation for AWS outputs.
 
 ---
 
@@ -91,4 +97,4 @@ Both team members work together to close out the capstone:
 
 - Each person owns a coherent half of the pipeline (source-side vs. target-side), minimizing merge conflicts on shared files.
 - The Migration Spec contract lets both people build and test independently in Phase 1 using sample data, rather than waiting on each other.
-- Joint phases (0 and 4) are placed exactly where shared decisions matter most: defining the interface up front, and integrating/validating the whole system at the end.
+- Phase ownership remains stable from start to finish: Person A handles Azure concerns, Person B handles AWS concerns.
