@@ -1,0 +1,21 @@
+{
+  "azure_resource_type": "Microsoft.KeyVault/vaults/keys",
+  "property_mappings": [
+    {
+      "azure_property": "keySize",
+      "aws_property": "KeySpec",
+      "required": true,
+      "notes": [
+        "Validate RSA or ECC compatibility before creating KMS key specs."
+      ]
+    },
+    {
+      "azure_property": "keyOps",
+      "aws_property": "KeyUsage",
+      "required": true,
+      "notes": [
+        "Some operation combinations may need policy-based enforcement in AWS."
+      ]
+    }
+  ]
+}

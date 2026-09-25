@@ -1,0 +1,21 @@
+{
+  "azure_resource_type": "Microsoft.Network/privateEndpoints",
+  "property_mappings": [
+    {
+      "azure_property": "privateLinkServiceConnections",
+      "aws_property": "ServiceName",
+      "required": true,
+      "notes": [
+        "Private service endpoint model differs by AWS service and endpoint type."
+      ]
+    },
+    {
+      "azure_property": "subnet",
+      "aws_property": "SubnetIds",
+      "required": true,
+      "notes": [
+        "Ensure endpoint subnet route and DNS settings are aligned."
+      ]
+    }
+  ]
+}

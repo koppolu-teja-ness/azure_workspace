@@ -14,14 +14,22 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from migration_assistant.azure_discovery.resource_inventory import discover_bicep_files
+from migration_assistant.config.app_config import app_config_to_state, parse_app_config
 from migration_assistant.graph.state import GraphState, MigrationStatus
 
 logger = logging.getLogger(__name__)
 
 
 def run(state: GraphState) -> dict[str, Any]:
-    logger.info("discovery_agent: stub — no resources discovered yet")
+    app_config = parse_app_config(state.get("config"))
+    bicep_files = discover_bicep_files(
+        bicep_paths=app_config.bicep_paths,
+        bicep_directories=app_config.bicep_directories,
+    )
+    app_config.discovered_bicep_files = bicep_files
+    logger.info("discovery_agent: discovered %d bicep files", len(bicep_files))
     return {
-        "source_resources": [],
+        "config": app_config_to_state(app_config),
         "status": MigrationStatus.DISCOVERED,
     }

@@ -95,6 +95,37 @@ The core differentiator is that this system treats migration as a **governed, ve
 | Post-Deployment Validation Agent | Compares live AWS resource state against the Azure source (structural + functional) |
 | Reporting Agent | Produces migration plan, execution, and validation reports |
 
+### 8.1.1 Current Implementation Status (as of 2026-09-25)
+
+The architecture above is the target design. The current codebase already
+implements the full node wiring in LangGraph, with deterministic behavior as
+the default and optional LLM/RAG augmentation in selected nodes.
+
+| Agent | RAG usage | LLM usage | Current behavior |
+|---|---|---|---|
+| Discovery Agent | No | No | Deterministic |
+| Parser/Analyzer Agent | No | No | Deterministic |
+| Mapping Agent | Yes | Optional | Deterministic rule-based mapping with optional hybrid retrieval and optional Bedrock enrichment |
+| CFN Generator Agent | No | No | Deterministic |
+| Static Validation Agent | No | No | Deterministic |
+| Planning & Risk-Scoring Agent | No | Optional | Deterministic risk scoring with optional Bedrock reason enrichment |
+| Human Approval Gate | No | No | Deterministic control-flow gate |
+| Deployment Agent | No | No | Deterministic |
+| Post-Deployment Validation Agent | No | No | Deterministic |
+| Reporting Agent | No | Optional | Deterministic reporting with optional Bedrock summary generation |
+
+LLM calls are enabled only when configuration specifies all of:
+
+- `llm.enabled = true`
+- `llm.provider = aws_bedrock`
+- `llm.bedrock.model_id` is non-empty
+
+If these conditions are not met, the system remains fully deterministic and
+continues the workflow without blocking.
+
+For implementation-level details and source-of-truth behavior, see
+`docs/agent_responsibilities.md` and `ARCHITECTURE.md`.
+
 ### 8.2 End-to-End Workflow
 
 ```

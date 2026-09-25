@@ -83,6 +83,7 @@ if __name__ == "__main__":
         "mappings": [],
         "risk_assessments": [],
         "validation_results": [],
+        "llm_traces": [],
         "status": MigrationStatus.DISCOVERED,
         "config": {},
     }

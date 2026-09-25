@@ -1,0 +1,13 @@
+{
+  "azure_resource_type": "Microsoft.Network/networkSecurityGroups",
+  "property_mappings": [
+    {
+      "azure_property": "securityRules",
+      "aws_property": "SecurityGroupIngress",
+      "required": true,
+      "notes": [
+        "Outbound and inbound rule priorities differ between NSG and Security Groups."
+      ]
+    }
+  ]
+}

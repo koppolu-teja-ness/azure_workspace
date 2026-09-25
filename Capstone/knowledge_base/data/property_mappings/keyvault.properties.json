@@ -1,0 +1,21 @@
+{
+  "azure_resource_type": "Microsoft.KeyVault/vaults",
+  "property_mappings": [
+    {
+      "azure_property": "tenantId",
+      "aws_property": "KmsKeyId",
+      "required": true,
+      "notes": [
+        "Tenant identity context should be represented through IAM and KMS policies."
+      ]
+    },
+    {
+      "azure_property": "sku",
+      "aws_property": "Name",
+      "required": false,
+      "notes": [
+        "Key Vault SKU behavior does not map directly to Secrets Manager tiers."
+      ]
+    }
+  ]
+}

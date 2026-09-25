@@ -16,6 +16,7 @@ def test_graph_compiles_and_runs_end_to_end_with_stubs():
         "mappings": [],
         "risk_assessments": [],
         "validation_results": [],
+        "llm_traces": [],
         "status": MigrationStatus.DISCOVERED,
         "config": {},
     }

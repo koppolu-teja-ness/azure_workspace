@@ -17,6 +17,18 @@ from migration_assistant.graph.workflow import build_graph
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the migration pipeline")
     parser.add_argument("--run-id", default="local-run")
+    parser.add_argument(
+        "--bicep",
+        action="append",
+        default=[],
+        help="Path to a Bicep file (can be repeated).",
+    )
+    parser.add_argument(
+        "--bicep-dir",
+        action="append",
+        default=[],
+        help="Directory to recursively scan for .bicep files (can be repeated).",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -31,7 +43,10 @@ def main() -> None:
         "risk_assessments": [],
         "validation_results": [],
         "status": MigrationStatus.DISCOVERED,
-        "config": {},
+        "config": {
+            "bicep_paths": args.bicep,
+            "bicep_directories": args.bicep_dir,
+        },
     }
 
     final_state = app.invoke(initial_state)

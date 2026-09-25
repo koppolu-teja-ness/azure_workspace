@@ -2,6 +2,7 @@
 branches depend on. Keep this passing at every merge point."""
 from migration_assistant.graph.state import (
     ApprovalDecision,
+    LLMTraceEvent,
     MigrationSpec,
     MigrationStatus,
     ResourceType,
@@ -36,6 +37,28 @@ def test_migration_spec_round_trips_through_graph_state():
     assert rehydrated.run_id == spec.run_id
     assert len(rehydrated.source_resources) == 1
     assert rehydrated.source_resources[0].name == "kv1"
+
+
+def test_migration_spec_round_trips_llm_traces() -> None:
+    spec = MigrationSpec(
+        llm_traces=[
+            LLMTraceEvent(
+                node="map",
+                provider="aws_bedrock",
+                model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
+                prompt_version="mapping_v1",
+                status="ok",
+                prompt_sha256="a" * 64,
+                response_sha256="b" * 64,
+            )
+        ]
+    )
+
+    state = spec_to_graph_state(spec)
+    rehydrated = graph_state_to_spec(state)
+
+    assert len(rehydrated.llm_traces) == 1
+    assert rehydrated.llm_traces[0].prompt_version == "mapping_v1"
 
 
 def test_migration_spec_has_stable_defaults():

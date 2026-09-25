@@ -64,6 +64,36 @@ ruff check src tests knowledge_base
 mypy src
 ```
 
+## RAG operations (pgvector + embeddings)
+
+```bash
+# Seed KB tables with chunked embeddings
+python scripts/seed_knowledge_base.py
+
+# Validate RAG readiness (DB, pgvector schema, embeddings model)
+python scripts/rag_health_check.py
+
+# Evaluate retrieval quality on seed mapping dataset
+python scripts/evaluate_retrieval.py --top-k 3
+```
+
+## Which agents use LLM or RAG?
+
+| Agent | RAG | LLM | Notes |
+|---|---|---|---|
+| Mapping Agent | Yes | Optional | Uses deterministic rule-based mapping with optional hybrid retrieval and optional Bedrock enrichment |
+| Planning & Risk Agent | No | Optional | Deterministic risk scoring with optional Bedrock reasoning enrichment |
+| Reporting Agent | No | Optional | Deterministic reporting with optional Bedrock summary writing |
+| All other agents | No | No | Deterministic behavior |
+
+LLM calls are enabled only when all are true in `GraphState.config.llm`:
+
+- `enabled: true`
+- `provider: aws_bedrock`
+- `bedrock.model_id` is non-empty
+
+If these conditions are not met, the workflow stays on deterministic paths.
+
 You should see the smoke test print `Final status: MigrationStatus.VERIFIED`
 — that's the whole graph running end-to-end on stubs, all the way through
 deploy and post-deploy validation. That's the Phase 0 exit criterion:

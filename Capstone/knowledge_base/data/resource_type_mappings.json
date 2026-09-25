@@ -1,1 +1,104 @@
-{}
+{
+	"version": "1.0",
+	"mappings": [
+		{
+			"azure_resource_type": "Microsoft.KeyVault/vaults",
+			"aws_resource_type": "AWS::SecretsManager::Secret",
+			"mapping_rule_id": "rule-keyvault-secretsmanager",
+			"confidence": 0.9,
+			"notes": [
+				"Key Vault maps to Secrets Manager for secret storage."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.KeyVault/vaults/secrets",
+			"aws_resource_type": "AWS::SecretsManager::Secret",
+			"mapping_rule_id": "rule-keyvaultsecret-secret",
+			"confidence": 0.92,
+			"notes": [
+				"Each Key Vault secret maps to a Secrets Manager secret value version."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.KeyVault/vaults/keys",
+			"aws_resource_type": "AWS::KMS::Key",
+			"mapping_rule_id": "rule-keyvaultkey-kmskey",
+			"confidence": 0.86,
+			"notes": [
+				"Customer-managed encryption keys should map to AWS KMS keys."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.KeyVault/vaults/certificates",
+			"aws_resource_type": "AWS::CertificateManager::Certificate",
+			"mapping_rule_id": "rule-keyvaultcert-acm",
+			"confidence": 0.8,
+			"notes": [
+				"Certificate migration usually needs validation flow adjustments."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.Web/sites",
+			"aws_resource_type": "AWS::Lambda::Function",
+			"mapping_rule_id": "rule-functionapp-lambda",
+			"confidence": 0.88,
+			"notes": [
+				"Function App compute maps to Lambda for serverless runtime."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.Network/virtualNetworks",
+			"aws_resource_type": "AWS::EC2::VPC",
+			"mapping_rule_id": "rule-vnet-vpc",
+			"confidence": 0.92,
+			"notes": [
+				"Virtual Network maps to VPC."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.Network/virtualNetworks/subnets",
+			"aws_resource_type": "AWS::EC2::Subnet",
+			"mapping_rule_id": "rule-subnet-subnet",
+			"confidence": 0.92,
+			"notes": [
+				"Subnet CIDRs should be checked for overlap before deployment."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.Network/networkSecurityGroups",
+			"aws_resource_type": "AWS::EC2::SecurityGroup",
+			"mapping_rule_id": "rule-nsg-securitygroup",
+			"confidence": 0.87,
+			"notes": [
+				"NSG rules map to Security Group ingress/egress rules with semantic differences."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.Network/routeTables",
+			"aws_resource_type": "AWS::EC2::RouteTable",
+			"mapping_rule_id": "rule-routetable-routetable",
+			"confidence": 0.9,
+			"notes": [
+				"Route next-hop type translation should be validated by static checks."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+			"aws_resource_type": "AWS::EC2::VPCPeeringConnection",
+			"mapping_rule_id": "rule-vnetpeering-vpcpeering",
+			"confidence": 0.84,
+			"notes": [
+				"VNet peering and VPC peering have route and DNS behavior differences."
+			]
+		},
+		{
+			"azure_resource_type": "Microsoft.Network/privateEndpoints",
+			"aws_resource_type": "AWS::EC2::VPCEndpoint",
+			"mapping_rule_id": "rule-privateendpoint-privatelink",
+			"confidence": 0.8,
+			"notes": [
+				"Private endpoint migration may require service-specific endpoint type decisions."
+			]
+		}
+	]
+}

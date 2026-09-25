@@ -1,1 +1,45 @@
-{}
+{
+	"version": "1.0",
+	"rules": [
+		{
+			"azure_role": "Reader",
+			"aws_managed_policy": "ReadOnlyAccess",
+			"confidence": 0.95,
+			"notes": [
+				"Broad read-only mapping; scope minimization still recommended."
+			]
+		},
+		{
+			"azure_role": "Contributor",
+			"aws_managed_policy": "PowerUserAccess",
+			"confidence": 0.82,
+			"notes": [
+				"Contributor permissions do not map one-to-one; service gaps require review."
+			]
+		},
+		{
+			"azure_role": "Owner",
+			"aws_managed_policy": "AdministratorAccess",
+			"confidence": 0.78,
+			"notes": [
+				"Owner includes RBAC assignment capabilities; treat as high-privilege mapping."
+			]
+		},
+		{
+			"azure_role": "Key Vault Secrets User",
+			"aws_managed_policy": "SecretsManagerReadWrite",
+			"confidence": 0.88,
+			"notes": [
+				"Verify write scope and resource-level conditions after migration."
+			]
+		},
+		{
+			"azure_role": "Network Contributor",
+			"aws_managed_policy": "AmazonVPCFullAccess",
+			"confidence": 0.84,
+			"notes": [
+				"Network role mapping should be reduced to least privilege in production."
+			]
+		}
+	]
+}

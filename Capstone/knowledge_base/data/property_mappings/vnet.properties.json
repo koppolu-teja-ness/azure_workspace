@@ -1,0 +1,13 @@
+{
+  "azure_resource_type": "Microsoft.Network/virtualNetworks",
+  "property_mappings": [
+    {
+      "azure_property": "addressSpace",
+      "aws_property": "CidrBlock",
+      "required": true,
+      "notes": [
+        "VNet address prefixes should map to VPC CIDR allocation."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "azure_resource_type": "Microsoft.Web/sites",
+  "property_mappings": [
+    {
+      "azure_property": "httpsOnly",
+      "aws_property": "FunctionUrlConfig.AuthType",
+      "required": false,
+      "notes": [
+        "HTTPS-only semantics can map to authenticated function URL or API Gateway policy."
+      ]
+    }
+  ]
+}

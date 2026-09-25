@@ -1,0 +1,21 @@
+{
+  "azure_resource_type": "Microsoft.KeyVault/vaults/certificates",
+  "property_mappings": [
+    {
+      "azure_property": "x509Thumbprint",
+      "aws_property": "CertificateArn",
+      "required": false,
+      "notes": [
+        "Existing certificate material may require import workflow into ACM."
+      ]
+    },
+    {
+      "azure_property": "subject",
+      "aws_property": "DomainName",
+      "required": true,
+      "notes": [
+        "Domain validation method must be selected during ACM issuance."
+      ]
+    }
+  ]
+}
