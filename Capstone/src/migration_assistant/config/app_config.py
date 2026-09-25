@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class BedrockConfig(BaseModel):
     model_id: str = ""
     region_name: str | None = None
-    temperature: float = 0.0
+    temperature: float = 0.7
     max_tokens: int = 800
 
 

@@ -49,6 +49,25 @@ def test_parse_llm_provider_config_without_model_id_disables_settings() -> None:
     assert provider.settings is None
 
 
+def test_parse_llm_provider_config_normalizes_zero_temperature() -> None:
+    raw_config = {
+        "llm": {
+            "enabled": True,
+            "provider": "aws_bedrock",
+            "bedrock": {
+                "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                "temperature": 0.0,
+            },
+        }
+    }
+    config = parse_app_config(raw_config)
+
+    provider = parse_llm_provider_config(config)
+
+    assert provider.settings is not None
+    assert provider.settings.temperature == 0.7
+
+
 def test_parse_json_object_accepts_wrapped_json() -> None:
     text = "Here is output:\n```json\n{\"a\": 1, \"b\": [2]}\n```"
 

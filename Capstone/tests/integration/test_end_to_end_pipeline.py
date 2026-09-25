@@ -82,7 +82,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 				"bedrock": {
 					"model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
 					"region_name": "us-east-1",
-					"temperature": 0.0,
+					"temperature": 0.7,
 					"max_tokens": 512,
 				},
 			},

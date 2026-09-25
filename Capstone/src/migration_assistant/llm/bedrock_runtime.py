@@ -21,7 +21,7 @@ from migration_assistant.graph.state import LLMTraceEvent
 class BedrockSettings:
     model_id: str
     region_name: str | None = None
-    temperature: float = 0.0
+    temperature: float = 0.7
     max_tokens: int = 800
 
 
@@ -44,10 +44,14 @@ def parse_llm_provider_config(app_config: AppConfig) -> LLMProviderConfig:
     if not model_id:
         return LLMProviderConfig(enabled=enabled, provider=provider, settings=None)
 
+    raw_temperature = float(llm_config.bedrock.temperature)
+    # Reasoning-enabled agents should not run at temperature 0.0 (greedy mode).
+    effective_temperature = raw_temperature if raw_temperature > 0.0 else 0.7
+
     settings = BedrockSettings(
         model_id=model_id,
         region_name=llm_config.bedrock.region_name,
-        temperature=float(llm_config.bedrock.temperature),
+        temperature=effective_temperature,
         max_tokens=int(llm_config.bedrock.max_tokens),
     )
     return LLMProviderConfig(enabled=enabled, provider=provider, settings=settings)

@@ -78,13 +78,13 @@ def _build_prompt(resource: SourceResource, deterministic_mapping: MappingRecord
     # Keep prompt explicit and JSON-only to minimize parser ambiguity.
     return (
         "You are an Azure-to-AWS infrastructure mapping expert. "
-        "Use the deterministic mapping as grounding, then refine only if needed.\n\n"
+        "Use the baseline mapping as context, then choose the best target mapping.\n\n"
         "Return ONLY valid JSON with keys: "
         "target_logical_id, mapping_rule_id, confidence, notes, unmapped_properties.\n"
         "- confidence must be in [0, 1].\n"
         "- notes must be a list of short strings.\n"
         "- unmapped_properties must be a list of property names not confidently mapped.\n\n"
         f"Source resource:\n{resource.model_dump_json(indent=2)}\n\n"
-        f"Deterministic mapping baseline:\n{deterministic_mapping.model_dump_json(indent=2)}\n"
+        f"Baseline mapping context:\n{deterministic_mapping.model_dump_json(indent=2)}\n"
     )
 

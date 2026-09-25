@@ -54,7 +54,7 @@ class BedrockRiskReasoner:
 def _build_prompt(mapping: MappingRecord, risk: RiskAssessment) -> str:
     return (
         "You are a cloud migration risk reviewer.\n"
-        "Given a deterministic risk assessment, propose up to 3 concise additional reasons.\n"
+        "Given a baseline risk assessment, propose up to 3 concise additional reasons.\n"
         "Do not change the risk level.\n\n"
         "Return ONLY JSON: {\"additional_reasons\": [\"...\"]}.\n\n"
         f"Mapping:\n{mapping.model_dump_json(indent=2)}\n\n"
