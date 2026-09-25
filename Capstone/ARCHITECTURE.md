@@ -5,11 +5,8 @@ infrastructure migration.
 
 ## Architecture diagram
 
-See `docs/high_level_architecture.md` for:
-
-- System context diagram (interfaces, workflow, knowledge, LLM, ops)
-- Migration workflow pipeline diagram (10-step flow with approval gate)
-- Optional intelligence overlay (deterministic fallback vs Bedrock enrichment)
+- High-level architecture notes: [docs/high_level_architecture.md](docs/high_level_architecture.md)
+- Diagram asset: [docs/architecture_diagram.png](docs/architecture_diagram.png)
 
 ## High-level flow
 
@@ -19,6 +16,12 @@ Discovery -> Parse/Analyze -> Map -> Generate CFN -> Static Validate
 ```
 
 The graph wiring is defined in `src/migration_assistant/graph/workflow.py`.
+
+## Implementation status
+
+- Core graph structure and state contract are implemented.
+- Multiple agent paths are still in scaffold/partial mode while the capstone
+	implementation is being completed.
 
 ## Core architecture components
 
@@ -47,12 +50,13 @@ The graph wiring is defined in `src/migration_assistant/graph/workflow.py`.
 	- deterministic JSON/rule-table fallback always available,
 	- optional pgvector similarity retrieval when DB/embeddings are configured.
 
-## Runtime behavior guarantees
+## Runtime behavior
 
-- Deterministic fallback is preserved for every LLM-augmented step.
-- If LLM provider config is incomplete or unavailable, pipeline execution
-	continues without blocking.
-- LLM-enabled steps append `llm_traces` into graph state for auditability.
+- LLM-capable modules use a shared Bedrock runtime helper contract.
+- Required Bedrock settings are validated by `require_bedrock_settings(...)`
+	where used.
+- LLM-capable agent implementations append `llm_traces` into graph state when
+	their LLM path executes.
 
 ## Configuration contract for LLM execution
 
@@ -69,4 +73,5 @@ llm:
 		max_tokens: 800
 ```
 
-Any missing requirement automatically routes execution to deterministic logic.
+If a node calls `require_bedrock_settings(...)` and config is incomplete, that
+node raises a configuration error in the current implementation.
