@@ -27,10 +27,10 @@ The graph wiring is defined in `src/migration_assistant/graph/workflow.py`.
 
 ### Agents using LLM
 
-- Mapping Agent (`mapping_agent.py`): optional Bedrock mapping enrichment.
-- Planning & Risk Agent (`planning_risk_agent.py`): optional Bedrock risk
+- Mapping Agent (`mapping_agent.py`): required Bedrock mapping refinement.
+- Planning & Risk Agent (`planning_risk_agent.py`): required Bedrock risk
 	reason enrichment.
-- Reporting Agent (`reporting_agent.py`): optional Bedrock summary generation.
+- Reporting Agent (`reporting_agent.py`): required Bedrock summary generation.
 
 ### Agents using RAG
 
@@ -41,9 +41,8 @@ The graph wiring is defined in `src/migration_assistant/graph/workflow.py`.
 
 ## Runtime behavior guarantees
 
-- Deterministic fallback is preserved for every LLM-augmented step.
-- If LLM provider config is incomplete or unavailable, pipeline execution
-	continues without blocking.
+- LLM-augmented reasoning/reporting steps require valid Bedrock configuration.
+- Missing/invalid Bedrock configuration fails fast for those agents.
 - LLM-enabled steps append `llm_traces` into graph state for auditability.
 
 ## Configuration contract for LLM execution

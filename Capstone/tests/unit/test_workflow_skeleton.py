@@ -5,7 +5,16 @@ from migration_assistant.graph.state import GraphState, MigrationStatus
 from migration_assistant.graph.workflow import build_graph
 
 
-def test_graph_compiles_and_runs_end_to_end_with_stubs():
+def test_graph_compiles_and_runs_end_to_end_with_stubs(monkeypatch):
+    def _mock_report_llm(*, settings, prompt, runtime_client=None):
+        _ = settings, prompt, runtime_client
+        return "Smoke summary"
+
+    monkeypatch.setattr(
+        "migration_assistant.reporting.bedrock_report_writer.invoke_bedrock_text",
+        _mock_report_llm,
+    )
+
     app = build_graph()
 
     initial_state: GraphState = {
@@ -18,7 +27,16 @@ def test_graph_compiles_and_runs_end_to_end_with_stubs():
         "validation_results": [],
         "llm_traces": [],
         "status": MigrationStatus.DISCOVERED,
-        "config": {},
+        "config": {
+            "llm": {
+                "enabled": True,
+                "provider": "aws_bedrock",
+                "bedrock": {
+                    "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                    "temperature": 0.7,
+                },
+            }
+        },
     }
 
     final_state = app.invoke(initial_state)

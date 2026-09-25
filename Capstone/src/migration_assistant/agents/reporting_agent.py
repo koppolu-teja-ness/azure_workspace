@@ -14,7 +14,7 @@ from typing import Any
 
 from migration_assistant.config.app_config import app_config_to_state, parse_app_config
 from migration_assistant.graph.state import GraphState
-from migration_assistant.llm.bedrock_runtime import parse_llm_provider_config
+from migration_assistant.llm.bedrock_runtime import require_bedrock_settings
 from migration_assistant.reporting.bedrock_report_writer import BedrockReportWriter
 
 logger = logging.getLogger(__name__)
@@ -23,22 +23,17 @@ logger = logging.getLogger(__name__)
 def run(state: GraphState) -> dict[str, Any]:
     logger.info("reporting_agent: stub report — status=%s", state.get("status"))
     app_config = parse_app_config(state.get("config"))
-    llm_provider = parse_llm_provider_config(app_config)
+    settings = require_bedrock_settings(
+        app_config=app_config,
+        agent_name="reporting_agent",
+    )
     llm_traces = []
 
-    if llm_provider.settings is not None:
-        try:
-            writer = BedrockReportWriter(settings=llm_provider.settings)
-            summary, trace = writer.write_summary(state)
-            app_config.report_summary = summary
-            llm_traces.append(trace)
-            logger.info("reporting_agent: Bedrock summary generated")
-        except Exception as exc:  # pragma: no cover - network/provider failures
-            logger.exception(
-                "reporting_agent: Bedrock summary generation failed (%s); "
-                "keeping deterministic path",
-                exc,
-            )
+    writer = BedrockReportWriter(settings=settings)
+    summary, trace = writer.write_summary(state)
+    app_config.report_summary = summary
+    llm_traces.append(trace)
+    logger.info("reporting_agent: Bedrock summary generated")
 
     return {
         "config": app_config_to_state(app_config),
