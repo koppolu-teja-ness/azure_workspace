@@ -1,14 +1,29 @@
 [build-system]
-requires = ['setuptools>=68','wheel']
-build-backend = 'setuptools.build_meta'
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = 'azure-aws-migration-assistant'
-version = '0.1.0'
-description = 'Agentic Azure to AWS infrastructure migration assistant'
-requires-python = '>=3.11'
-dependencies = ['fastapi','uvicorn','pydantic','pyyaml']
+name = "azure-aws-migration-assistant"
+version = "0.1.0"
+description = "Agentic AI-powered Azure-to-AWS infrastructure migration assistant"
+requires-python = ">=3.11"
 
-[project.optional-dependencies]
-dev = ['pytest','ruff','mypy']
+[tool.setuptools.packages.find]
+where = ["src"]
 
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "knowledge_base", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["UP042"] # (str, Enum) is deliberate here — more portable than StrEnum
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
