@@ -1,6 +1,21 @@
-project:
-  naming_prefix: mig
-  default_tags:
-    owner: platform
-    environment: dev
+# Naming & tagging conventions applied to every generated AWS resource.
+# Agree these jointly in Phase 0; both pipelines read from this file.
 
+naming:
+  prefix: "mig" # e.g. mig-kv1, mig-fn-orderprocessor
+  case: "kebab" # kebab | snake | camel
+  max_length: 64 # CloudFormation logical ID practical limit
+
+tagging:
+  required_tags:
+    - Environment
+    - MigratedFrom
+    - MigrationRunId
+    - Owner
+  default_values:
+    MigratedFrom: "azure"
+
+risk_thresholds:
+  # Mapping confidence below this -> auto-flag as "needs_review" regardless
+  # of what the mapping rule itself reports.
+  min_auto_migratable_confidence: 0.85
