@@ -13,6 +13,8 @@ import logging
 from typing import Any
 
 from migration_assistant.graph.state import GraphState
+from migration_assistant.llm.bedrock_runtime import require_bedrock_settings
+from migration_assistant.reporting.bedrock_report_writer import BedrockReportWriter
 
 logger = logging.getLogger(__name__)
 
@@ -20,3 +22,20 @@ logger = logging.getLogger(__name__)
 def run(state: GraphState) -> dict[str, Any]:
     logger.info("reporting_agent: stub report — status=%s", state.get("status"))
     return {}
+    app_config = parse_app_config(state.get("config"))
+    settings = require_bedrock_settings(
+        app_config=app_config,
+        agent_name="reporting_agent",
+    )
+    llm_traces = []
+
+    writer = BedrockReportWriter(settings=settings)
+    summary, trace = writer.write_summary(state)
+    app_config.report_summary = summary
+    llm_traces.append(trace)
+    logger.info("reporting_agent: Bedrock summary generated")
+
+    return {
+        "config": app_config_to_state(app_config),
+        "llm_traces": llm_traces,
+    }

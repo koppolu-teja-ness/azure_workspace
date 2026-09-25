@@ -14,7 +14,7 @@ from typing import Any
 
 from migration_assistant.config.app_config import parse_app_config
 from migration_assistant.graph.state import GraphState, MigrationStatus, RiskAssessment
-from migration_assistant.llm.bedrock_runtime import parse_llm_provider_config
+from migration_assistant.llm.bedrock_runtime import require_bedrock_settings
 from migration_assistant.planning.bedrock_risk_reasoner import BedrockRiskReasoner
 from migration_assistant.planning.risk_scoring import assess_risks
 
@@ -30,30 +30,24 @@ def run(state: GraphState) -> dict[str, Any]:
     )
     llm_traces = []
 
-    llm_provider = parse_llm_provider_config(app_config)
-    if llm_provider.settings is not None:
-        reasoner = BedrockRiskReasoner(settings=llm_provider.settings)
-        enriched: list[RiskAssessment] = []
-        for mapping, assessment in zip(
-            state.get("mappings", []),
-            risk_assessments,
-            strict=False,
-        ):
-            try:
-                extra_reasons, trace = reasoner.suggest_reasons(mapping, assessment)
-                llm_traces.append(trace)
-            except Exception as exc:  # pragma: no cover - network/provider failures
-                logger.exception(
-                    "planning_risk_agent: Bedrock enrichment failed (%s); "
-                    "keeping deterministic reasons",
-                    exc,
-                )
-                extra_reasons = []
+    settings = require_bedrock_settings(
+        app_config=app_config,
+        agent_name="planning_risk_agent",
+    )
+    reasoner = BedrockRiskReasoner(settings=settings)
+    enriched: list[RiskAssessment] = []
+    for mapping, assessment in zip(
+        state.get("mappings", []),
+        risk_assessments,
+        strict=False,
+    ):
+        extra_reasons, trace = reasoner.suggest_reasons(mapping, assessment)
+        llm_traces.append(trace)
 
-            if extra_reasons:
-                assessment.reasons = list(dict.fromkeys([*assessment.reasons, *extra_reasons]))
-            enriched.append(assessment)
-        risk_assessments = enriched
+        if extra_reasons:
+            assessment.reasons = list(dict.fromkeys([*assessment.reasons, *extra_reasons]))
+        enriched.append(assessment)
+    risk_assessments = enriched
 
     logger.info("planning_risk_agent: produced %d risk assessments", len(risk_assessments))
     return {

@@ -3,6 +3,14 @@
 This project is a LangGraph-based, agentic workflow for Azure-to-AWS
 infrastructure migration.
 
+## Architecture diagram
+
+See `docs/high_level_architecture.md` for:
+
+- System context diagram (interfaces, workflow, knowledge, LLM, ops)
+- Migration workflow pipeline diagram (10-step flow with approval gate)
+- Optional intelligence overlay (deterministic fallback vs Bedrock enrichment)
+
 ## High-level flow
 
 ```text

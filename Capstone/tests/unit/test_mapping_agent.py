@@ -10,7 +10,24 @@ from migration_assistant.graph.state import (
 from migration_assistant.mapping.rag_retriever import RuleBasedMappingRetriever, VectorMatch
 
 
-def test_mapping_agent_produces_mapping_for_supported_resources() -> None:
+def test_mapping_agent_produces_mapping_for_supported_resources(monkeypatch) -> None:
+	def _mock_mapping_llm(*, settings, prompt, runtime_client=None):
+		_ = settings, prompt, runtime_client
+		return json.dumps(
+			{
+				"target_logical_id": "Kv1Secret",
+				"mapping_rule_id": "rule-keyvault-secretsmanager",
+				"confidence": 0.95,
+				"notes": ["LLM mapping rationale"],
+				"unmapped_properties": [],
+			}
+		)
+
+	monkeypatch.setattr(
+		"migration_assistant.mapping.bedrock_client.invoke_bedrock_text",
+		_mock_mapping_llm,
+	)
+
 	state: GraphState = {
 		"run_id": "run-1",
 		"created_at": "2026-09-25T00:00:00+00:00",
@@ -26,6 +43,16 @@ def test_mapping_agent_produces_mapping_for_supported_resources() -> None:
 			)
 		],
 		"status": MigrationStatus.DISCOVERED,
+		"config": {
+			"llm": {
+				"enabled": True,
+				"provider": "aws_bedrock",
+				"bedrock": {
+					"model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+					"temperature": 0.7,
+				},
+			}
+		},
 	}
 
 	update = mapping_agent.run(state)

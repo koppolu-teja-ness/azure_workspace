@@ -57,6 +57,21 @@ def parse_llm_provider_config(app_config: AppConfig) -> LLMProviderConfig:
     return LLMProviderConfig(enabled=enabled, provider=provider, settings=settings)
 
 
+def require_bedrock_settings(*, app_config: AppConfig, agent_name: str) -> BedrockSettings:
+    provider = parse_llm_provider_config(app_config)
+    if not provider.enabled:
+        raise ValueError(f"{agent_name}: llm.enabled must be true")
+    if provider.provider != "aws_bedrock":
+        raise ValueError(
+            f"{agent_name}: llm.provider must be 'aws_bedrock', got '{provider.provider}'"
+        )
+    if provider.settings is None:
+        raise ValueError(
+            f"{agent_name}: incomplete Bedrock config; set llm.bedrock.model_id"
+        )
+    return provider.settings
+
+
 def build_runtime_client(region_name: str | None = None) -> Any:
     return boto3.client("bedrock-runtime", region_name=region_name)
 
