@@ -1,103 +1,94 @@
 # Team Work Split Plan
+### Agentic AI–Powered Azure-to-AWS Infrastructure Migration Assistant
 
-## Ownership Map (Source of Truth)
+---
 
-```text
-azure-aws-migration-assistant/
-│
-├── README.md                                         [joint]
-├── ARCHITECTURE.md                                    [joint]
-├── docker-compose.yml / Dockerfile                    [joint — Phase 4]
-│
-├── .github/workflows/                                 [joint — CI base in Phase 0]
-│
-├── config/
-│   ├── settings.yaml                                  [joint — Phase 0]
-│   └── region_mapping.yaml                             [joint — Phase 0]
-│
-├── src/migration_assistant/
-│   │
-│   ├── agents/
-│   │   ├── discovery_agent.py                         [charan]
-│   │   ├── parser_analyzer_agent.py                   [charan]
-│   │   ├── mapping_agent.py                            [charan]
-│   │   ├── cfn_generator_agent.py                      [saurav]
-│   │   ├── static_validation_agent.py                  [saurav]
-│   │   ├── planning_risk_agent.py                       [charan]
-│   │   ├── approval_gate.py                             [charan]
-│   │   ├── deployment_agent.py                          [saurav]
-│   │   ├── post_deploy_validation_agent.py              [saurav]
-│   │   └── reporting_agent.py                           [split — see reporting/ below]
-│   │
-│   ├── graph/
-│   │   ├── workflow.py                                 [joint — Phase 0 skeleton, both wire in nodes]
-│   │   ├── state.py                                     [joint — Phase 0, this IS the Migration Spec contract]
-│   │   └── checkpoints.py                              [saurav]
-│   │
-│   ├── azure_discovery/                                [charan]
-│   ├── bicep_parser/                                   [charan]
-│   │
-│   ├── mapping/
-│   │   ├── rag_retriever.py                             [charan]
-│   │   ├── embeddings.py                                [charan]
-│   │   └── mapping_rules/                                [charan]
-│   │
-│   ├── cfn_generation/                                 [saurav]
-│   │
-│   ├── validation/
-│   │   ├── static/                                      [saurav — Phase 1]
-│   │   └── post_deploy/                                 [saurav — Phase 2/3]
-│   │
-│   ├── planning/                                        [charan — Phase 2]
-│   ├── deployment/                                      [saurav — Phase 2]
-│   │
-│   ├── reporting/
-│   │   ├── migration_plan_report.py                    [charan — Phase 3]
-│   │   ├── execution_report.py                          [saurav — Phase 3]
-│   │   └── validation_report.py                         [saurav — Phase 3]
-│   │
-│   └── secrets/secure_copy.py                           [saurav, design agreed jointly in Phase 0]
-│
-├── knowledge_base/
-│   ├── ingestion/                                       [joint schema (Phase 0), charan fills content (Phase 1)]
-│   ├── data/                                            [charan — Phase 1]
-│   └── schema/pgvector_schema.sql                       [joint — Phase 0]
-│
-├── api/
-│   ├── main.py                                          [joint — Phase 4]
-│   ├── routers/discovery.py                             [charan]
-│   ├── routers/approval.py                              [charan]
-│   ├── routers/migration_runs.py                        [joint — Phase 4]
-│   └── routers/reports.py                               [joint — Phase 4]
-│
-├── dashboard/
-│   ├── pages/1_Discovery.py                             [charan]
-│   ├── pages/2_Migration_Plan.py                        [charan]
-│   ├── pages/3_Approval_Gate.py                         [charan — Phase 2]
-│   ├── pages/4_Deployment_Status.py                     [saurav]
-│   └── pages/5_Validation_Report.py                     [saurav]
-│
-├── observability/                                       [saurav — Phase 3]
-│
-├── tests/
-│   ├── unit/test_bicep_parser.py, test_mapping_agent.py  [charan]
-│   ├── unit/test_cfn_generation.py                        [saurav]
-│   ├── integration/                                       [joint — merge points]
-│   └── fixtures/
-│       ├── sample_bicep/                                   [charan]
-│       └── expected_cfn/                                   [saurav]
-│
-├── scripts/
-│   ├── run_discovery.sh                                  [charan]
-│   ├── run_migration_pipeline.py                          [joint entrypoint]
-│   └── seed_knowledge_base.py                             [charan]
-│
-├── docs/                                                  [joint — Phase 4]
-└── examples/sample_migration_run/                          [joint — Phase 4]
-```
+## Branch Structure
 
-## Working Rules
+| Branch | Owner | Focus |
+|---|---|---|
+| `feature/source-pipeline` | Person A | Azure-understanding side: discovery, parsing, mapping, planning, approval UI |
+| `feature/target-pipeline` | Person B | AWS-generation side: CloudFormation generation, validation, deployment, testing |
 
-- Joint items should be proposed via PR with at least one review from the other owner.
-- Shared contracts (`graph/state.py`, KB schema, API interfaces) should not be changed without notifying both owners.
-- Use merge points at the end of each phase to reduce integration drift.
+The two branches meet at one shared contract — a **Migration Spec** (JSON) that Person A's pipeline produces and Person B's pipeline consumes. Agreeing on this schema in Phase 0 is what allows both people to work in parallel without blocking each other.
+
+---
+
+## Phase 0 — Foundations (Joint)
+
+Both team members work together before splitting:
+
+- Agree on the Migration Spec JSON schema (the resource-graph representation passed between pipelines)
+- Agree on the RAG knowledge base schema (mapping rule format)
+- Set up repo scaffold, branching strategy, and CI base
+- Set up the LangGraph skeleton and shared agent interfaces
+- Provision sandbox Azure and AWS accounts
+
+---
+
+## Phase 1 — Core Build
+
+### Person A — `feature/source-pipeline`
+- Discovery Agent: enumerate Azure Key Vault, Function App, and VNet resources; ingest existing Bicep files
+- Parser/Analyzer Agent: parse Bicep → ARM JSON → resource graph
+- Populate RAG knowledge base content (mapping tables, incompatibilities, best practices)
+- Mapping Agent: produce the Migration Spec output
+
+### Person B — `feature/target-pipeline`
+- CFN Generator Agent: build against 2–3 hand-written sample Migration Specs (so work isn't blocked waiting on Person A)
+- Static Validation Agent: integrate `cfn-lint` and `checkov`
+- Deployment Agent skeleton: `boto3` wrapper, no live deployment yet
+
+**Merge point:** once Person A's real Migration Spec output is flowing, merge both branches into `develop` for the first true (even if rough) end-to-end run.
+
+---
+
+## Phase 2 — Wire Real Integration
+
+### Person A — `feature/source-pipeline`
+- Planning & Risk-Scoring Agent: classify objects as auto-migratable / needs-review / high-risk
+- Human Approval Gate: build the approve/reject/modify UI (Streamlit or React)
+
+### Person B — `feature/target-pipeline`
+- Swap sample specs for Person A's real Migration Spec output
+- Complete the Deployment Agent against the sandbox AWS account
+- Post-Deployment Validation Agent: structural equivalence checks (resource counts, property parity)
+
+**Merge point:** merge again, then re-run the full pipeline to catch drift between branches.
+
+---
+
+## Phase 3 — Depth & Rigor
+
+### Person A — `feature/source-pipeline`
+- Migration Test Suite: schema compatibility, dependency/referential integrity checks, missing-object detection
+- Risk report and migration plan report generation
+
+### Person B — `feature/target-pipeline`
+- Functional smoke tests: invoke migrated Lambdas, fetch secrets, verify network reachability
+- Security-posture diff checks (no new public exposure, no IAM over-broadening)
+- Execution & validation report generation
+- Observability wiring: LangSmith/LangFuse tracing, CloudWatch/Grafana dashboards
+
+**Merge point:** merge and re-test end-to-end once more before final integration.
+
+---
+
+## Phase 4 — Integration & Polish (Joint)
+
+Both team members work together to close out the capstone:
+
+- Merge `develop` into `main`
+- Run the full end-to-end pipeline across all three services (Key Vault, Functions, VNet)
+- Integrate FastAPI backend with the dashboard
+- Package with Docker and finalize the CI/CD pipeline
+- Write documentation and architecture diagram
+- Record the final demonstration video
+
+---
+
+## Why This Split Works
+
+- Each person owns a coherent half of the pipeline (source-side vs. target-side), minimizing merge conflicts on shared files.
+- The Migration Spec contract lets both people build and test independently in Phase 1 using sample data, rather than waiting on each other.
+- Joint phases (0 and 4) are placed exactly where shared decisions matter most: defining the interface up front, and integrating/validating the whole system at the end.
