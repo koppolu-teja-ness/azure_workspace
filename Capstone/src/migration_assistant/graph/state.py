@@ -150,24 +150,6 @@ class ValidationResult(BaseModel):
     details: str | None = None
 
 
-class LLMTraceEvent(BaseModel):
-    """Prompt/response trace metadata for auditability.
-
-    Stores hashes and metadata instead of full prompt text to reduce exposure
-    of sensitive configuration/resource details.
-    """
-
-    node: str
-    provider: str
-    model_id: str
-    prompt_version: str
-    status: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    prompt_sha256: str
-    response_sha256: str | None = None
-    error: str | None = None
-
-
 class MigrationSpec(BaseModel):
     """The full shared contract. An instance of this is what Person A's
     pipeline produces and Person B's pipeline consumes — this is the object
@@ -182,7 +164,6 @@ class MigrationSpec(BaseModel):
     risk_assessments: list[RiskAssessment] = Field(default_factory=list)
     approval: ApprovalDecision = Field(default_factory=ApprovalDecision)
     validation_results: list[ValidationResult] = Field(default_factory=list)
-    llm_traces: list[LLMTraceEvent] = Field(default_factory=list)
 
     status: MigrationStatus = MigrationStatus.DISCOVERED
     config: dict[str, Any] = Field(default_factory=dict)
@@ -210,7 +191,6 @@ class GraphState(TypedDict, total=False):
     risk_assessments: Annotated[list[RiskAssessment], operator.add]
     approval: ApprovalDecision
     validation_results: Annotated[list[ValidationResult], operator.add]
-    llm_traces: Annotated[list[LLMTraceEvent], operator.add]
     status: MigrationStatus
     config: dict[str, Any]
 
@@ -227,7 +207,6 @@ def spec_to_graph_state(spec: MigrationSpec) -> GraphState:
         risk_assessments=list(spec.risk_assessments),
         approval=spec.approval,
         validation_results=list(spec.validation_results),
-        llm_traces=list(spec.llm_traces),
         status=spec.status,
         config=dict(spec.config),
     )
@@ -245,7 +224,6 @@ def graph_state_to_spec(state: GraphState) -> MigrationSpec:
         risk_assessments=state.get("risk_assessments", []),
         approval=state.get("approval", ApprovalDecision()),
         validation_results=state.get("validation_results", []),
-        llm_traces=state.get("llm_traces", []),
         status=state.get("status", MigrationStatus.DISCOVERED),
         config=state.get("config", {}),
     )
