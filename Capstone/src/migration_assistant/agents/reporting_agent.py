@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from migration_assistant.config.app_config import app_config_to_state, parse_app_config
 from migration_assistant.graph.state import GraphState
 from migration_assistant.llm.bedrock_runtime import require_bedrock_settings
 from migration_assistant.reporting.bedrock_report_writer import BedrockReportWriter
@@ -20,8 +21,6 @@ logger = logging.getLogger(__name__)
 
 
 def run(state: GraphState) -> dict[str, Any]:
-    logger.info("reporting_agent: stub report — status=%s", state.get("status"))
-    return {}
     app_config = parse_app_config(state.get("config"))
     settings = require_bedrock_settings(
         app_config=app_config,

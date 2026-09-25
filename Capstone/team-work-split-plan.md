@@ -92,3 +92,37 @@ Both team members work together to close out the capstone:
 - Each person owns a coherent half of the pipeline (source-side vs. target-side), minimizing merge conflicts on shared files.
 - The Migration Spec contract lets both people build and test independently in Phase 1 using sample data, rather than waiting on each other.
 - Joint phases (0 and 4) are placed exactly where shared decisions matter most: defining the interface up front, and integrating/validating the whole system at the end.
+
+---
+
+## Phase 1 Completion Check (2026-09-25)
+
+This checkpoint confirms the Phase 1 scope is implemented and validated for both owners.
+
+### Person A (`feature/source-pipeline`) — Completed
+
+- Discovery Agent now resolves configured Bicep files and stores discovery output in graph config.
+- Parser/Analyzer Agent now parses discovered Bicep and materializes `source_resources`.
+- Mapping Agent now runs deterministic retrieval + Bedrock refinement and returns `mappings` and `llm_traces`.
+- RAG knowledge base content is present under `knowledge_base/data` (resource and property mapping rules).
+
+### Person B (`feature/target-pipeline`) — Completed
+
+- CFN Generator Agent now builds `target_resources` from source resources + mappings.
+- Static Validation Agent now runs schema validation, `cfn-lint`, and `checkov` on generated templates.
+- Deployment Agent skeleton supports dry-run CloudFormation deployment preview using the boto3 wrapper.
+
+### Shared Contract/Runtime Updates Applied
+
+- `MigrationSpec`/`GraphState` now include `llm_traces` via `LLMTraceEvent` to support mapping, planning, and reporting traceability.
+- Property-equivalence loading utilities are implemented for rule coverage checks.
+
+### Verification Evidence
+
+- Full test suite passed: `37 passed`.
+- Command run: `python -m pytest -q`.
+
+### Notes
+
+- Phase 1 is complete for baseline implementation and test validation.
+- Remaining major work starts in Phase 2 and later (real human approval UI, live deployment path, deeper post-deploy validation, richer reports/observability).

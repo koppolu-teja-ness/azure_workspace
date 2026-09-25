@@ -1,5 +1,80 @@
 # Azure-AWS Migration Assistant
 
+Agentic migration assistant for translating Azure infrastructure definitions
+into AWS CloudFormation with workflow orchestration, validation, approval,
+and reporting stages.
+
+## Project Status
+
+- Current state: active capstone scaffold with partial Phase 0/1 implementations.
+- Workflow graph and state contract are in place.
+- Several agents are implemented as stubs or partial logic and are still under active development.
+- Phase 1 baseline sign-off (2026-09-25): source-side and target-side Phase 1 deliverables are wired for deterministic execution with Bedrock-enabled paths where required, validated by `python -m pytest -q` (37 passed).
+
+## What This Repo Contains
+
+- LangGraph workflow orchestration for migration stages.
+- Agent modules for discovery, mapping, planning, deployment, and reporting.
+- Knowledge base assets for mapping rules and incompatibility guidance.
+- API surface (`api/`) and dashboard surfaces (`dashboard/`, `streamlit_app/`).
+- Tests, fixtures, and sample outputs under `tests/` and `examples/`.
+
+## Quickstart
+
+### 1) Set up Python environment
+
+```bash
+python -m venv .venv
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+pip install -e .
+pip install -r requirements-dev.txt
+```
+
+### 2) Optional local services
+
+```bash
+docker compose up -d postgres
+```
+
+### 3) Run tests
+
+```bash
+pytest -v
+```
+
+### 4) Run workflow smoke test
+
+```bash
+python -m migration_assistant.graph.workflow
+```
+
+Expected output includes `Final status: MigrationStatus.VERIFIED`.
+
+## Documentation Index
+
+- Architecture summary: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Detailed architecture notes and diagram references: [docs/high_level_architecture.md](docs/high_level_architecture.md)
+- Developer workflow and contributor notes: [docs/developer_guide.md](docs/developer_guide.md)
+- Agent responsibilities: [docs/agent_responsibilities.md](docs/agent_responsibilities.md)
+- Migration spec contract: [docs/migration_spec_schema.md](docs/migration_spec_schema.md)
+- Mapping rules references: [docs/mapping_rules_reference.md](docs/mapping_rules_reference.md)
+- Phase 0 checklist: [docs/phase0_checklist.md](docs/phase0_checklist.md)
+
+## Developer Quick Commands
+
+Use these as quick checks from a fresh clone:
+
+```bash
+python -m migration_assistant.graph.workflow
+pytest -v
+```
+
+For full contributor workflows (targeted test loops, static checks,
+integration caveats), use:
+
+[docs/developer_guide.md](docs/developer_guide.md)
+
 ## Team Ownership Map
 
 This section mirrors the working ownership split used for implementation.

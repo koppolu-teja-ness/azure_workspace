@@ -15,6 +15,7 @@ import logging
 from typing import Any
 
 from migration_assistant.agents.base import BaseAgent
+from migration_assistant.config.app_config import parse_app_config
 from migration_assistant.graph.state import GraphState, MigrationStatus
 from migration_assistant.llm.bedrock_runtime import require_bedrock_settings
 from migration_assistant.mapping.bedrock_client import (
@@ -29,12 +30,9 @@ class MappingAgent(BaseAgent):
     name = "mapping_agent"
 
     def __init__(self, retriever: Any | None = None) -> None:
-        # Phase 1 TODO (charan): wire in the real RAG retriever here, e.g.
-        #   self.retriever = retriever or build_default_retriever()
-        self.retriever = retriever
+        self.retriever = retriever or RuleBasedMappingRetriever()
 
     def run(self, state: GraphState) -> dict[str, Any]:
-        logger.info("mapping_agent: stub — no mappings produced yet")
         source_resources = state.get("source_resources", [])
         llm_traces = []
 
@@ -66,7 +64,8 @@ class MappingAgent(BaseAgent):
 
         logger.info("mapping_agent: produced %d mappings", len(mappings))
         return {
-            "mappings": [],
+            "mappings": mappings,
+            "llm_traces": llm_traces,
             "status": MigrationStatus.MAPPED,
         }
 
