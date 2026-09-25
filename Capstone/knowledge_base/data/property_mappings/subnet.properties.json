@@ -1,0 +1,21 @@
+{
+  "azure_resource_type": "Microsoft.Network/virtualNetworks/subnets",
+  "property_mappings": [
+    {
+      "azure_property": "addressPrefix",
+      "aws_property": "CidrBlock",
+      "required": true,
+      "notes": [
+        "CIDR overlap checks are mandatory before deployment."
+      ]
+    },
+    {
+      "azure_property": "networkSecurityGroup",
+      "aws_property": "NetworkAclAssociationId",
+      "required": false,
+      "notes": [
+        "Security controls may split across Security Groups and NACLs in AWS."
+      ]
+    }
+  ]
+}

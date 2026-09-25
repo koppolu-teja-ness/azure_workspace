@@ -1,0 +1,45 @@
+{
+	"version": "1.0",
+	"mappings": [
+		{
+			"azure_trigger": "httpTrigger",
+			"aws_trigger": "API Gateway -> Lambda",
+			"confidence": 0.94,
+			"notes": [
+				"Validate authorization model and route templates."
+			]
+		},
+		{
+			"azure_trigger": "timerTrigger",
+			"aws_trigger": "EventBridge Scheduler -> Lambda",
+			"confidence": 0.93,
+			"notes": [
+				"Cron expression semantics differ; normalize timezone behavior."
+			]
+		},
+		{
+			"azure_trigger": "blobTrigger",
+			"aws_trigger": "S3 Event Notification -> Lambda",
+			"confidence": 0.9,
+			"notes": [
+				"At-least-once delivery behavior should be considered for idempotency."
+			]
+		},
+		{
+			"azure_trigger": "queueTrigger",
+			"aws_trigger": "SQS -> Lambda",
+			"confidence": 0.91,
+			"notes": [
+				"Visibility timeout and batch size should be tuned per workload."
+			]
+		},
+		{
+			"azure_trigger": "serviceBusTrigger",
+			"aws_trigger": "SQS or SNS -> Lambda",
+			"confidence": 0.82,
+			"notes": [
+				"Topic/subscription topology may require split mapping strategy."
+			]
+		}
+	]
+}

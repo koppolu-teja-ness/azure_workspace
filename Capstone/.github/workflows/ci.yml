@@ -1,0 +1,69 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: pip install -e .[dev]
+      - run: ruff check .
+      - run: mypy src
+      - run: pytest -q
+
+  rag-readiness:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: migration_kb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d migration_kb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/migration_kb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - name: Apply pgvector schema
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import time
+
+          import psycopg
+
+          database_url = "postgresql://postgres:postgres@localhost:5432/migration_kb"
+          schema_sql = Path("knowledge_base/schema/pgvector_schema.sql").read_text(encoding="utf-8")
+
+          last_error = None
+          for _ in range(20):
+              try:
+                  with psycopg.connect(database_url) as conn:
+                      with conn.cursor() as cur:
+                          cur.execute(schema_sql)
+                      conn.commit()
+                  print("Schema applied")
+                  break
+              except Exception as exc:
+                  last_error = exc
+                  time.sleep(2)
+          else:
+              raise RuntimeError(f"Unable to apply schema: {last_error}")
+          PY
+      - name: Run RAG health-check (skip Bedrock)
+        run: python scripts/rag_health_check.py --skip-bedrock
+

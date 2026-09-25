@@ -1,0 +1,36 @@
+# Phase 0 joint-owned files — any change needs review from both of you.
+/src/migration_assistant/graph/state.py       @charan @saurav
+/src/migration_assistant/graph/workflow.py    @charan @saurav
+/knowledge_base/schema/pgvector_schema.sql    @charan @saurav
+/config/                                      @charan @saurav
+
+# Person A — source pipeline
+/src/migration_assistant/azure_discovery/                     @charan
+/src/migration_assistant/bicep_parser/                        @charan
+/src/migration_assistant/mapping/                              @charan
+/src/migration_assistant/planning/                              @charan
+/src/migration_assistant/agents/discovery_agent.py              @charan
+/src/migration_assistant/agents/parser_analyzer_agent.py        @charan
+/src/migration_assistant/agents/mapping_agent.py                 @charan
+/src/migration_assistant/agents/planning_risk_agent.py            @charan
+/src/migration_assistant/agents/approval_gate.py                  @charan
+/knowledge_base/data/                                              @charan
+/knowledge_base/ingestion/                                          @charan
+/dashboard/pages/1_Discovery.py                                      @charan
+/dashboard/pages/2_Migration_Plan.py                                  @charan
+/dashboard/pages/3_Approval_Gate.py                                    @charan
+
+# Person B — target pipeline
+/src/migration_assistant/cfn_generation/                        @saurav
+/src/migration_assistant/validation/                             @saurav
+/src/migration_assistant/deployment/                              @saurav
+/src/migration_assistant/agents/cfn_generator_agent.py             @saurav
+/src/migration_assistant/agents/static_validation_agent.py          @saurav
+/src/migration_assistant/agents/deployment_agent.py                   @saurav
+/src/migration_assistant/agents/post_deploy_validation_agent.py         @saurav
+/observability/                                                          @saurav
+/dashboard/pages/4_Deployment_Status.py                                    @saurav
+/dashboard/pages/5_Validation_Report.py                                     @saurav
+
+# Joint (Phase 3, split by section within the file — see reporting_agent.py)
+/src/migration_assistant/agents/reporting_agent.py     @charan @saurav

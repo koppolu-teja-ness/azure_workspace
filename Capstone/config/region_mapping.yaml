@@ -1,0 +1,10 @@
+# Azure region -> AWS region. Fill in / adjust once your sandbox accounts'
+# regions are decided in Phase 0 (see scripts/provision_sandbox.md).
+
+eastus: us-east-1
+eastus2: us-east-1
+westus2: us-west-2
+westeurope: eu-west-1
+northeurope: eu-west-1
+centralindia: ap-south-1
+southeastasia: ap-southeast-1

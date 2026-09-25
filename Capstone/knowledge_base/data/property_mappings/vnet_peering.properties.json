@@ -1,0 +1,21 @@
+{
+  "azure_resource_type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+  "property_mappings": [
+    {
+      "azure_property": "remoteVirtualNetwork",
+      "aws_property": "PeerVpcId",
+      "required": true,
+      "notes": [
+        "Cross-account peering requires additional role and route coordination."
+      ]
+    },
+    {
+      "azure_property": "allowForwardedTraffic",
+      "aws_property": "PeerRegion",
+      "required": false,
+      "notes": [
+        "Traffic behavior differences should be captured in validation reports."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "azure_resource_type": "Microsoft.Network/routeTables",
+  "property_mappings": [
+    {
+      "azure_property": "routes",
+      "aws_property": "Routes",
+      "required": true,
+      "notes": [
+        "Next-hop translation should be verified by static validation rules."
+      ]
+    }
+  ]
+}
