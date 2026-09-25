@@ -1,105 +1,102 @@
-# Azure → AWS Migration Assistant — Phase 0 Scaffold
+# Azure-AWS Migration Assistant
 
-Agentic AI–powered migration assistant that turns Azure Bicep (Key Vault,
-Functions, Virtual Network) into validated, deployable AWS CloudFormation.
+## Team Ownership Map
 
-This is the **Phase 0** scaffold: repo structure, the Migration Spec
-contract, the RAG knowledge base schema, CI, and a LangGraph skeleton with
-every agent stubbed out so the two branches (`charan` = source pipeline,
-`saurav` = target pipeline) can build in parallel starting Phase 1.
+This section mirrors the working ownership split used for implementation.
 
-## Branch model
-
-| Branch | Owner | Focus |
-|---|---|---|
-| `charan` | Person A | Discovery, Bicep parsing, RAG mapping, planning/risk, approval UI |
-| `saurav` | Person B | CFN generation, static validation, deployment, post-deploy validation |
-| `develop` / `main` | Joint | Integration merge points |
-
-See `CODEOWNERS` for the file-level ownership map, and
-`team-work-split-plan.md` for the phase-by-phase plan.
-
-## What's in this scaffold
-
-- **`src/migration_assistant/graph/state.py`** — the **Migration Spec**: the
-  one shared contract both branches build against. Pydantic models
-  (`MigrationSpec`, `SourceResource`, `TargetResource`, `MappingRecord`,
-  `RiskAssessment`, `ApprovalDecision`, `ValidationResult`) plus the
-  `GraphState` TypedDict LangGraph actually threads through the graph.
-  **Treat this file as frozen after Phase 0** — changes need review from
-  both of you (see `docs/migration_spec_schema.md`).
-- **`src/migration_assistant/graph/workflow.py`** — the LangGraph skeleton.
-  Compiles and runs end-to-end today with every agent stubbed out.
-- **`src/migration_assistant/agents/`** — one module per agent from the
-  design doc, each exposing `run(state) -> dict`. Currently stubs; ownership
-  is marked in each file's docstring and in `CODEOWNERS`.
-- **`knowledge_base/schema/pgvector_schema.sql`** — the RAG knowledge base
-  schema (mapping rules, RBAC↔IAM mappings, trigger mappings,
-  incompatibilities, region mappings, issue log).
-- **`.github/workflows/ci.yml`** — lint (ruff) + type check (mypy) + tests,
-  running on `main`, `develop`, `charan`, and `saurav`.
-- **`config/`** — naming/tagging conventions and Azure↔AWS region mapping,
-  agreed jointly.
-- **`scripts/provision_sandbox.md`** + **`scripts/bootstrap_sandbox.sh`** —
-  checklist and starter CLI commands for setting up sandbox Azure/AWS
-  accounts. Run these locally, not in CI — they need your own credentials.
-
-## Setup
-
-```bash
-git clone <your-repo-url> && cd azure-aws-migration-assistant
-python -m venv .venv && source .venv/bin/activate
-pip install -e .
-pip install -r requirements-dev.txt
-cp .env.example .env   # fill in once sandbox accounts exist — see scripts/provision_sandbox.md
-docker compose up -d postgres   # local pgvector instance; schema auto-loads
+```text
+azure-aws-migration-assistant/
+│
+├── README.md                                         [joint]
+├── ARCHITECTURE.md                                    [joint]
+├── docker-compose.yml / Dockerfile                    [joint — Phase 4]
+│
+├── .github/workflows/                                 [joint — CI base in Phase 0]
+│
+├── config/
+│   ├── settings.yaml                                  [joint — Phase 0]
+│   └── region_mapping.yaml                             [joint — Phase 0]
+│
+├── src/migration_assistant/
+│   │
+│   ├── agents/
+│   │   ├── discovery_agent.py                         [charan]
+│   │   ├── parser_analyzer_agent.py                   [charan]
+│   │   ├── mapping_agent.py                            [charan]
+│   │   ├── cfn_generator_agent.py                      [saurav]
+│   │   ├── static_validation_agent.py                  [saurav]
+│   │   ├── planning_risk_agent.py                       [charan]
+│   │   ├── approval_gate.py                             [charan]
+│   │   ├── deployment_agent.py                          [saurav]
+│   │   ├── post_deploy_validation_agent.py              [saurav]
+│   │   └── reporting_agent.py                           [split — see reporting/ below]
+│   │
+│   ├── graph/
+│   │   ├── workflow.py                                 [joint — Phase 0 skeleton, both wire in nodes]
+│   │   ├── state.py                                     [joint — Phase 0, this IS the Migration Spec contract]
+│   │   └── checkpoints.py                              [saurav]
+│   │
+│   ├── azure_discovery/                                [charan]
+│   ├── bicep_parser/                                   [charan]
+│   │
+│   ├── mapping/
+│   │   ├── rag_retriever.py                             [charan]
+│   │   ├── embeddings.py                                [charan]
+│   │   └── mapping_rules/                                [charan]
+│   │
+│   ├── cfn_generation/                                 [saurav]
+│   │
+│   ├── validation/
+│   │   ├── static/                                      [saurav — Phase 1]
+│   │   └── post_deploy/                                 [saurav — Phase 2/3]
+│   │
+│   ├── planning/                                        [charan — Phase 2]
+│   ├── deployment/                                      [saurav — Phase 2]
+│   │
+│   ├── reporting/
+│   │   ├── migration_plan_report.py                    [charan — Phase 3]
+│   │   ├── execution_report.py                          [saurav — Phase 3]
+│   │   └── validation_report.py                         [saurav — Phase 3]
+│   │
+│   └── secrets/secure_copy.py                           [saurav, design agreed jointly in Phase 0]
+│
+├── knowledge_base/
+│   ├── ingestion/                                       [joint schema (Phase 0), charan fills content (Phase 1)]
+│   ├── data/                                            [charan — Phase 1]
+│   └── schema/pgvector_schema.sql                       [joint — Phase 0]
+│
+├── api/
+│   ├── main.py                                          [joint — Phase 4]
+│   ├── routers/discovery.py                             [charan]
+│   ├── routers/approval.py                              [charan]
+│   ├── routers/migration_runs.py                        [joint — Phase 4]
+│   └── routers/reports.py                               [joint — Phase 4]
+│
+├── dashboard/
+│   ├── pages/1_Discovery.py                             [charan]
+│   ├── pages/2_Migration_Plan.py                        [charan]
+│   ├── pages/3_Approval_Gate.py                         [charan — Phase 2]
+│   ├── pages/4_Deployment_Status.py                     [saurav]
+│   └── pages/5_Validation_Report.py                     [saurav]
+│
+├── observability/                                       [saurav — Phase 3]
+│
+├── tests/
+│   ├── unit/test_bicep_parser.py, test_mapping_agent.py  [charan]
+│   ├── unit/test_cfn_generation.py                        [saurav]
+│   ├── integration/                                       [joint — merge points]
+│   └── fixtures/
+│       ├── sample_bicep/                                   [charan]
+│       └── expected_cfn/                                   [saurav]
+│
+├── scripts/
+│   ├── run_discovery.sh                                  [charan]
+│   ├── run_migration_pipeline.py                          [joint entrypoint]
+│   └── seed_knowledge_base.py                             [charan]
+│
+├── docs/                                                  [joint — Phase 4]
+└── examples/sample_migration_run/                          [joint — Phase 4]
 ```
 
-## Verify the Phase 0 scaffold works
+For collaboration rules and merge checkpoints, see [team-work-split-plan.md](team-work-split-plan.md).
 
-```bash
-pytest -v                                      # schema + graph skeleton tests
-python -m migration_assistant.graph.workflow   # smoke-test the full stub pipeline
-ruff check src tests knowledge_base
-mypy src
-```
-
-## RAG operations (pgvector + embeddings)
-
-```bash
-# Seed KB tables with chunked embeddings
-python scripts/seed_knowledge_base.py
-
-# Validate RAG readiness (DB, pgvector schema, embeddings model)
-python scripts/rag_health_check.py
-
-# Evaluate retrieval quality on seed mapping dataset
-python scripts/evaluate_retrieval.py --top-k 3
-```
-
-## Which agents use LLM or RAG?
-
-| Agent | RAG | LLM | Notes |
-|---|---|---|---|
-| Mapping Agent | Yes | Optional | Uses deterministic rule-based mapping with optional hybrid retrieval and optional Bedrock enrichment |
-| Planning & Risk Agent | No | Optional | Deterministic risk scoring with optional Bedrock reasoning enrichment |
-| Reporting Agent | No | Optional | Deterministic reporting with optional Bedrock summary writing |
-| All other agents | No | No | Deterministic behavior |
-
-LLM calls are enabled only when all are true in `GraphState.config.llm`:
-
-- `enabled: true`
-- `provider: aws_bedrock`
-- `bedrock.model_id` is non-empty
-
-If these conditions are not met, the workflow stays on deterministic paths.
-
-You should see the smoke test print `Final status: MigrationStatus.VERIFIED`
-— that's the whole graph running end-to-end on stubs, all the way through
-deploy and post-deploy validation. That's the Phase 0 exit criterion:
-**the skeleton runs, the contract is agreed, now go build Phase 1 on your
-own branch.**
-
-## Phase 0 exit checklist
-
-See `docs/phase0_checklist.md`.
