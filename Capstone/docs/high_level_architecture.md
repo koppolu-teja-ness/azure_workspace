@@ -33,9 +33,14 @@ Discovery -> Parse/Analyze -> Map -> Generate CFN -> Static Validate
 
 - Graph wiring is implemented in `src/migration_assistant/graph/workflow.py`.
 - Shared data contract is implemented in `src/migration_assistant/graph/state.py`.
-- Some agents are fully deterministic today, while some LLM-enabled paths are
-  partially implemented and still being refined.
-- LLM usage relies on AWS Bedrock configuration in runtime state (`config.llm`).
+- API integration is available through FastAPI routes for discovery, approval,
+  run execution, and reports.
+- Dashboard integration is available through Streamlit multipage UI in
+  `dashboard/streamlit_app`.
+- Containerized local deployment is available for Postgres, API, and dashboard
+  through `docker-compose.yml`.
+- LLM usage relies on AWS Bedrock configuration in runtime state (`config.llm`)
+  and can be disabled for deterministic execution.
 
 ## Related Docs
 

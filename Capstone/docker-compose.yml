@@ -10,6 +10,36 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./knowledge_base/schema/pgvector_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d migration_kb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/migration_kb
+      PYTHONPATH: /app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: infra/docker/dashboard.Dockerfile
+    environment:
+      MIGRATION_API_BASE_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "8501:8501"
 
 volumes:
   pgdata:

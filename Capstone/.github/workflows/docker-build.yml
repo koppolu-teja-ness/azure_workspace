@@ -5,5 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t migration-assistant:latest .
+      - name: Build root API image
+        run: docker build -t migration-assistant-api:latest .
+      - name: Build API image from infra Dockerfile
+        run: docker build -f infra/docker/api.Dockerfile -t migration-assistant-api-infra:latest .
+      - name: Build dashboard image
+        run: docker build -f infra/docker/dashboard.Dockerfile -t migration-assistant-dashboard:latest .
+      - name: Validate compose file
+        run: docker compose config
 

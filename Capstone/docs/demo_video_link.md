@@ -1,6 +1,17 @@
 # Demo Video Link
 
-No public demo recording link is currently committed in this repository.
+## Current Status
+
+Phase 4 implementation artifacts are now committed, including API/dashboard
+integration, Docker stack assets, and run/report examples.
+
+Video recording link is pending publication by the project maintainers.
+
+## Phase 4 Evidence Artifacts
+
+- Example outputs: `examples/sample_migration_run/`
+- Run evidence summary: `examples/sample_migration_run/phase4_run_evidence.md`
+- Known limitations/open risks: `docs/known_limitations.md`
 
 ## How To Record a Fresh Demo
 

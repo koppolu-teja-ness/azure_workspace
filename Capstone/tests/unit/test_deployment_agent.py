@@ -69,3 +69,44 @@ def test_build_stack_name_normalizes_run_id() -> None:
 
     assert stack_name.startswith("migration-run-01-prod")
     assert len(stack_name) <= 128
+
+
+def test_deployment_agent_uses_live_mode_when_enabled(monkeypatch) -> None:
+    state: GraphState = {
+        "run_id": "RunLive01",
+        "created_at": "2026-09-25T00:00:00+00:00",
+        "target_resources": [
+            TargetResource(
+                logical_id="CoreVpc",
+                aws_resource_type="AWS::EC2::VPC",
+                properties={"CidrBlock": "10.0.0.0/16"},
+                depends_on=[],
+            ),
+        ],
+        "status": MigrationStatus.APPROVED,
+        "config": {
+            "aws": {"region_name": "us-east-1"},
+            "deployment": {
+                "live_deploy": True,
+                "enable_live_deploy": True,
+                "stack_name": "mig-live-test",
+                "execute_change_set": False,
+            },
+        },
+    }
+
+    monkeypatch.setattr(
+        "migration_assistant.deployment.cloudformation_deployer.CloudFormationDeployer.deploy_stack",
+        lambda self, **kwargs: {
+            "mode": "live",
+            "stack_name": kwargs["stack_name"],
+            "change_set_name": "mig-live-test-exec",
+            "executed": False,
+        },
+    )
+
+    update = deployment_agent.run(state)
+
+    assert update["status"] == MigrationStatus.DEPLOYED
+    assert update["config"]["deployment_result"]["mode"] == "live"
+    assert update["config"]["deployment_result"]["stack_name"] == "mig-live-test"

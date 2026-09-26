@@ -16,12 +16,25 @@ from migration_assistant.config.app_config import app_config_to_state, parse_app
 from migration_assistant.graph.state import GraphState
 from migration_assistant.llm.bedrock_runtime import require_bedrock_settings
 from migration_assistant.reporting.bedrock_report_writer import BedrockReportWriter
+from migration_assistant.reporting.execution_report import build_execution_report
+from migration_assistant.reporting.migration_plan_report import (
+    build_migration_plan_report,
+    build_risk_report,
+)
+from migration_assistant.reporting.validation_report import build_validation_report
 
 logger = logging.getLogger(__name__)
 
 
 def run(state: GraphState) -> dict[str, Any]:
     app_config = parse_app_config(state.get("config"))
+    config = dict(app_config_to_state(app_config))
+
+    config["migration_plan_report"] = build_migration_plan_report(state)
+    config["risk_report"] = build_risk_report(state)
+    config["execution_report"] = build_execution_report(state)
+    config["validation_report"] = build_validation_report(state)
+
     settings = require_bedrock_settings(
         app_config=app_config,
         agent_name="reporting_agent",
@@ -30,11 +43,11 @@ def run(state: GraphState) -> dict[str, Any]:
 
     writer = BedrockReportWriter(settings=settings)
     summary, trace = writer.write_summary(state)
-    app_config.report_summary = summary
+    config["report_summary"] = summary
     llm_traces.append(trace)
     logger.info("reporting_agent: Bedrock summary generated")
 
     return {
-        "config": app_config_to_state(app_config),
+        "config": config,
         "llm_traces": llm_traces,
     }

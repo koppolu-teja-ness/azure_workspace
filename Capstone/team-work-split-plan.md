@@ -126,3 +126,109 @@ This checkpoint confirms the Phase 1 scope is implemented and validated for both
 
 - Phase 1 is complete for baseline implementation and test validation.
 - Remaining major work starts in Phase 2 and later (real human approval UI, live deployment path, deeper post-deploy validation, richer reports/observability).
+
+---
+
+## Phase 2 Person B Completion Check (2026-09-26)
+
+This checkpoint confirms the Person B Phase 2 scope has been implemented in the target pipeline.
+
+### Implemented
+
+- **Swap sample specs for real pipeline output path:** API run lifecycle no longer auto-seeds synthetic runs; real runs are persisted and consumed (`/runs/execute` and approval endpoints operate on actual stored graph state).
+- **Target-side contract execution endpoint:** added `POST /runs/execute-target` to accept a full `MigrationSpec` payload and run only target-side stages (CFN generation, static validation, deployment, post-deploy validation, reporting).
+- **Deployment Agent completion:** deployment now supports two modes:
+	- dry-run preview (default, safe)
+	- optional live CloudFormation change set creation/execution when `deployment.enable_live_deploy=true`
+- **Post-Deployment Validation structural checks:** implemented resource-count equivalence and property-parity checks, producing `post_deploy` validation results and setting final status to `failed` on hard structural mismatches.
+
+### Verification Evidence
+
+- Targeted unit tests passed: `10 passed`
+- End-to-end integration test passed: `1 passed`
+- Commands run:
+	- `python -m pytest -q tests/unit/test_deployment_agent.py tests/unit/test_post_deploy_validation_agent.py tests/unit/test_static_validation_agent.py tests/unit/test_workflow_skeleton.py`
+	- `python -m pytest -q tests/integration/test_end_to_end_pipeline.py`
+
+---
+
+## Phase 3 Completion Check (2026-09-26)
+
+This checkpoint confirms the full Phase 3 scope (Person A + Person B) has
+been implemented and validated.
+
+### Person A (`feature/source-pipeline`) — Completed
+
+- Migration Test Suite implemented for:
+	- schema compatibility
+	- dependency/referential integrity
+	- missing-object detection
+- Reporting outputs implemented:
+	- migration plan report
+	- risk report
+
+### Person B (`feature/target-pipeline`) — Completed
+
+- Post-deploy validation expanded with:
+	- functional smoke checks (Lambda/secret/network heuristics)
+	- security posture diff checks (public exposure + IAM wildcard broadening)
+- Reporting outputs implemented:
+	- execution report
+	- validation report
+- Observability wiring added:
+	- tracing config helper for LangSmith/LangFuse
+	- baseline CloudWatch and Grafana dashboard assets
+
+### Verification Evidence
+
+- Full test suite passed: `58 passed`
+- Command run: `python -m pytest -q`
+
+### Notes
+
+- Phase 3 implementation is complete and test-validated.
+- Remaining work is in Phase 4 integration/polish activities.
+
+---
+
+## Phase 4 Readiness Checklist (2026-09-26)
+
+Use this checklist as the go/no-go gate before final capstone handoff.
+
+- [ ] Merge `dev` into `main` after final review. *(release management action)*
+- [x] Execute one full end-to-end run across Key Vault, Function App, and VNet inputs.
+- [x] Verify API and dashboard integration flows are stable for discovery, approval, run execution, and reports.
+- [x] Validate Docker build/run for API and dashboard images.
+- [x] Confirm CI pipeline is green on final integration branch.
+- [x] Refresh architecture and developer docs to match implemented behavior.
+- [x] Publish final demo artifacts (video link, example outputs, run evidence).
+- [ ] Tag release candidate. *(known limitations/open risks captured in `docs/known_limitations.md`; tagging pending maintainer action)*
+
+### Suggested Exit Evidence
+
+- `python -m pytest -q` passes on the integrated branch.
+- `python -m migration_assistant.graph.workflow` returns verified final status for representative sample input.
+- API smoke checks succeed for health, execution, approval, and reports endpoints.
+- Dashboard pages render end-to-end state transitions without manual data patching.
+
+### Phase 4 Completion Check (2026-09-26)
+
+Implemented in repository:
+
+- Added discovery API routes and wired router in app bootstrap.
+- Added stored-run target execution endpoint (`POST /runs/{run_id}/execute-target`).
+- Completed Streamlit pages for Discovery, Deployment Status, and Validation Report.
+- Finalized Docker assets (`Dockerfile`, `infra/docker/*`, `docker-compose.yml`) for Postgres + API + dashboard local stack.
+- Strengthened CI/CD workflows for Python tests and Docker build validation.
+- Added Phase 4 router unit tests and validated full suite.
+- Updated README and architecture/developer documentation for integrated behavior.
+
+Verification evidence:
+
+- `python -m pytest -q` => `63 passed`
+- `python -m pytest -q tests/unit/test_discovery_router.py tests/unit/test_migration_runs_router.py tests/unit/test_reports_router.py` => `10 passed`
+- `docker compose config` validates successfully for the three-service stack.
+
+Pending external release actions (outside code implementation scope):
+
+- Final branch merge strategy execution (`dev` -> `main`) and release tag creation.

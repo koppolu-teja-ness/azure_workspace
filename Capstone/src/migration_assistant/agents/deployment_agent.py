@@ -43,12 +43,42 @@ def run(state: GraphState) -> dict[str, Any]:
     template_body = to_yaml(template)
 
     client_factory = Boto3ClientFactory.from_state_config(config)
+    live_deploy_enabled = bool(deployment_cfg.get("enable_live_deploy", False))
     deployer = CloudFormationDeployer(
         client_factory=client_factory,
-        live_deploy_enabled=False,
+        live_deploy_enabled=live_deploy_enabled,
     )
 
     live_deploy_requested = bool(deployment_cfg.get("live_deploy", False))
+    if live_deploy_requested and live_deploy_enabled:
+        try:
+            deployment_result = deployer.deploy_stack(
+                run_id=state.get("run_id", "unknown-run"),
+                template_body=template_body,
+                stack_name=deployment_cfg.get("stack_name"),
+                execute_change_set=bool(deployment_cfg.get("execute_change_set", True)),
+            )
+            config["deployment_result"] = deployment_result
+            logger.info(
+                "deployment_agent: executed live deployment via change set %s",
+                deployment_result.get("change_set_name"),
+            )
+            return {
+                "config": config,
+                "status": MigrationStatus.DEPLOYED,
+            }
+        except Exception as exc:
+            config["deployment_result"] = {
+                "mode": "live",
+                "status": "failed",
+                "error": str(exc),
+            }
+            logger.exception("deployment_agent: live deployment failed")
+            return {
+                "config": config,
+                "status": MigrationStatus.FAILED,
+            }
+
     preview = deployer.preview_deployment(
         run_id=state.get("run_id", "unknown-run"),
         target_resources=target_resources,
@@ -58,7 +88,7 @@ def run(state: GraphState) -> dict[str, Any]:
     )
     if live_deploy_requested:
         preview["note"] = (
-            "Live deployment requested but not supported yet. "
+            "Live deployment requested but disabled by configuration. "
             "Dry-run preview generated only."
         )
 

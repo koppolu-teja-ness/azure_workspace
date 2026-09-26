@@ -12,8 +12,9 @@ Current repository status is mixed:
 
 - The graph structure and state schema are implemented.
 - Several agents are deterministic and usable in tests.
-- Some LLM-enabled paths are partial/stubbed and should be treated as
-  in-progress.
+- API routers and Streamlit dashboard pages are integrated for discovery,
+  approval, deployment execution, and report retrieval.
+- Some LLM-enabled paths remain optional and config-gated.
 
 Before large changes, review:
 
@@ -37,6 +38,12 @@ Optional local Postgres for vector workflows:
 docker compose up -d postgres
 ```
 
+Full local stack:
+
+```bash
+docker compose up --build
+```
+
 ## Common Dev Loops
 
 Graph smoke run:
@@ -49,6 +56,33 @@ Pipeline CLI with local fixture inputs:
 
 ```bash
 python scripts/run_migration_pipeline.py --run-id dev-run --bicep-dir ./tests/fixtures/sample_bicep
+```
+
+Reports API quick checks (after a run is saved via `/runs/execute` or
+`/runs/execute-target`):
+
+```bash
+curl http://localhost:8000/reports/runs/<run_id>
+curl http://localhost:8000/reports/runs/<run_id>/migration-plan
+curl http://localhost:8000/reports/runs/<run_id>/risk
+curl http://localhost:8000/reports/runs/<run_id>/execution
+curl http://localhost:8000/reports/runs/<run_id>/validation
+```
+
+Notes:
+
+- Aggregate endpoint returns all report payloads plus `report_summary`.
+- Individual endpoints return one report each.
+- If a report payload is not present in run config, it is generated on demand
+  from run state.
+- Unknown run IDs return `404`.
+
+Discovery and target-stage API quick checks:
+
+```bash
+curl -X POST http://localhost:8000/discovery/runs -H "Content-Type: application/json" -d '{"run_id":"dev-discovery-1","bicep_paths":[],"bicep_directories":["tests/fixtures/sample_bicep"],"config":{"approval":{"auto_approve":false}}}'
+curl http://localhost:8000/discovery/runs
+curl -X POST http://localhost:8000/runs/<run_id>/execute-target
 ```
 
 Targeted test runs:
@@ -117,10 +151,9 @@ Related modules:
 
 These are useful to know before debugging pipeline outputs:
 
-- `api/main.py` is currently empty (API bootstrap not completed).
-- Mapping agent currently logs Bedrock mapping activity but returns an empty
-  mappings list in its return payload.
-- Reporting agent contains drafted Bedrock summary logic after an early return.
+- Live deployment to AWS is disabled by default (`deployment.enable_live_deploy=false`).
+- Some Azure/AWS edge-case mappings still route to review/modify flows.
+- Vector retrieval behavior depends on optional Postgres/pgvector availability.
 
 ## PR Checklist For Contributors
 

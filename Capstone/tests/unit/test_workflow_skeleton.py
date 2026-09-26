@@ -28,6 +28,10 @@ def test_graph_compiles_and_runs_end_to_end_with_stubs(monkeypatch):
         "llm_traces": [],
         "status": MigrationStatus.DISCOVERED,
         "config": {
+            "approval": {
+                "auto_approve": True,
+                "auto_reviewer": "test-suite",
+            },
             "llm": {
                 "enabled": True,
                 "provider": "aws_bedrock",

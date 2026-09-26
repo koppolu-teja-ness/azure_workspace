@@ -86,6 +86,61 @@ class CloudFormationDeployer:
 		)
 		return preview.to_dict()
 
+	def deploy_stack(
+		self,
+		*,
+		run_id: str,
+		template_body: str,
+		stack_name: str | None = None,
+		execute_change_set: bool = True,
+	) -> dict[str, Any]:
+		"""Create (and optionally execute) a CloudFormation change set."""
+		if not self._live_deploy_enabled:
+			raise RuntimeError("Live deployment is disabled by configuration.")
+
+		resolved_stack_name = stack_name or build_stack_name(run_id)
+		change_set_name = f"{resolved_stack_name}-exec"
+		change_set_type = self._detect_change_set_type(resolved_stack_name)
+
+		client = self._client_factory.cloudformation_client()
+		response = client.create_change_set(
+			StackName=resolved_stack_name,
+			ChangeSetName=change_set_name,
+			ChangeSetType=change_set_type,
+			TemplateBody=template_body,
+			Capabilities=["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"],
+		)
+		change_set_id = response.get("Id")
+
+		result: dict[str, Any] = {
+			"mode": "live",
+			"stack_name": resolved_stack_name,
+			"change_set_name": change_set_name,
+			"change_set_type": change_set_type,
+			"change_set_id": change_set_id,
+			"executed": False,
+			"region_name": self._client_factory.region_name,
+		}
+
+		if execute_change_set:
+			waiter = client.get_waiter("change_set_create_complete")
+			waiter.wait(StackName=resolved_stack_name, ChangeSetName=change_set_name)
+			client.execute_change_set(
+				StackName=resolved_stack_name,
+				ChangeSetName=change_set_name,
+			)
+			result["executed"] = True
+
+		return result
+
+	def _detect_change_set_type(self, stack_name: str) -> str:
+		client = self._client_factory.cloudformation_client()
+		try:
+			client.describe_stacks(StackName=stack_name)
+		except Exception:
+			return "CREATE"
+		return "UPDATE"
+
 
 def order_resources_for_deployment(
 	target_resources: list[TargetResource],

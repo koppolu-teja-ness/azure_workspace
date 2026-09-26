@@ -1,0 +1,51 @@
+{
+  "title": "Migration Pipeline Overview",
+  "uid": "migration-pipeline-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Runs By Status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(migration_runs_total{status=\"verified\"}[5m]))", "legendFormat": "verified" },
+        { "expr": "sum(rate(migration_runs_total{status=\"failed\"}[5m]))", "legendFormat": "failed" },
+        { "expr": "sum(rate(migration_runs_total{status=\"awaiting_approval\"}[5m]))", "legendFormat": "awaiting_approval" }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Validation Outcomes",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(migration_validation_total{result=\"pass\"}[5m]))", "legendFormat": "pass" },
+        { "expr": "sum(rate(migration_validation_total{result=\"warning\"}[5m]))", "legendFormat": "warning" },
+        { "expr": "sum(rate(migration_validation_total{result=\"fail\"}[5m]))", "legendFormat": "fail" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Agent Duration p95 (s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(migration_agent_duration_seconds_bucket[5m])) by (le, agent))", "legendFormat": "{{agent}}" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "LLM Errors",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "sum(rate(migration_llm_errors_total[5m]))", "legendFormat": "llm_errors" }
+      ]
+    }
+  ],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" }
+}

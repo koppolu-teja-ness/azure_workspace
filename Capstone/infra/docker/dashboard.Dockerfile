@@ -3,5 +3,5 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-CMD ['streamlit', 'run', 'dashboard/streamlit_app/app.py', '--server.address', '0.0.0.0', '--server.port', '8501']
+CMD ["streamlit", "run", "dashboard/streamlit_app/app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
 

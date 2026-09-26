@@ -6,10 +6,11 @@ and reporting stages.
 
 ## Project Status
 
-- Current state: active capstone scaffold with partial Phase 0/1 implementations.
+- Current state: active capstone implementation with Phase 1-4 deliverables completed.
 - Workflow graph and state contract are in place.
-- Several agents are implemented as stubs or partial logic and are still under active development.
 - Phase 1 baseline sign-off (2026-09-25): source-side and target-side Phase 1 deliverables are wired for deterministic execution with Bedrock-enabled paths where required, validated by `python -m pytest -q` (37 passed).
+- Phase 3 completion sign-off (2026-09-26): migration test suite, report generation, smoke/security post-deploy checks, and observability assets are implemented and validated by `python -m pytest -q` (58 passed).
+- Phase 4 completion sign-off (2026-09-26): API + dashboard flows for discovery/approval/deployment/reporting are integrated, Docker packaging is finalized for API and dashboard services, and full test suite validation reached `63 passed`.
 
 ## What This Repo Contains
 
@@ -37,6 +38,12 @@ pip install -r requirements-dev.txt
 docker compose up -d postgres
 ```
 
+To run the full local stack (Postgres + API + Streamlit dashboard):
+
+```bash
+docker compose up --build
+```
+
 ### 3) Run tests
 
 ```bash
@@ -51,11 +58,160 @@ python -m migration_assistant.graph.workflow
 
 Expected output includes `Final status: MigrationStatus.VERIFIED`.
 
+## API Usage (Phase 2)
+
+Start the API server:
+
+```bash
+uvicorn api.main:app --reload
+```
+
+### Discovery Run Execution
+
+Create a run from local Bicep paths/directories and execute through the
+approval gate:
+
+```bash
+curl -X POST http://localhost:8000/discovery/runs \
+	-H "Content-Type: application/json" \
+	-d '{
+		"run_id": "phase4-discovery-001",
+		"bicep_paths": [],
+		"bicep_directories": ["tests/fixtures/sample_bicep"],
+		"config": {
+			"approval": {
+				"auto_approve": false
+			}
+		}
+	}'
+```
+
+Inspect discovery run summaries/details:
+
+```bash
+curl http://localhost:8000/discovery/runs
+curl http://localhost:8000/discovery/runs/<run_id>
+```
+
+### Execute Target Pipeline From Migration Spec
+
+Use `POST /runs/execute-target` when Person A has already produced a
+`MigrationSpec` and you want to run only Person B stages:
+
+- CFN generation
+- static validation
+- deployment (dry-run by default, optional live mode)
+- post-deploy validation
+- reporting
+
+Example request:
+
+```bash
+curl -X POST http://localhost:8000/runs/execute-target \
+	-H "Content-Type: application/json" \
+	-d '{
+		"migration_spec": {
+			"run_id": "target-demo-001",
+			"created_at": "2026-09-26T00:00:00+00:00",
+			"source_resources": [
+				{
+					"resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet-main",
+					"resource_type": "Microsoft.Network/virtualNetworks",
+					"name": "vnet-main",
+					"api_version": "2023-05-01",
+					"location": "eastus",
+					"properties": {
+						"addressSpace": "10.0.0.0/16"
+					},
+					"depends_on": []
+				}
+			],
+			"mappings": [
+				{
+					"source_resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.Network/virtualNetworks/vnet-main",
+					"target_logical_id": "CoreVpc",
+					"mapping_rule_id": "rule-vnet-vpc",
+					"confidence": 0.95,
+					"notes": [],
+					"unmapped_properties": []
+				}
+			],
+			"status": "approved",
+			"config": {
+				"llm": {
+					"enabled": true,
+					"provider": "aws_bedrock",
+					"bedrock": {
+						"model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+						"region_name": "us-east-1",
+						"temperature": 0.7,
+						"max_tokens": 512
+					}
+				},
+				"deployment": {
+					"live_deploy": false,
+					"enable_live_deploy": false
+				}
+			}
+		}
+	}'
+```
+
+Expected response includes:
+
+- `run_id`, `status`
+- `target_resources`
+- `validation_results` (both `static` and `post_deploy`)
+- `config.deployment_preview` (or `config.deployment_result` in live mode)
+- `config.report_summary`
+
+If `migration_spec` is invalid, API returns `400`.
+If target pipeline LLM/deployment configuration is invalid, API returns `400` with a config error detail.
+
+To execute target stages for an already saved run without re-posting the full
+spec payload:
+
+```bash
+curl -X POST http://localhost:8000/runs/<run_id>/execute-target
+```
+
+### Fetch Generated Reports
+
+After a run is saved, report payloads can be fetched from dedicated endpoints.
+If a specific report payload is not already present in run config, the API
+builds it on demand from run state.
+
+Get all reports for a run:
+
+```bash
+curl http://localhost:8000/reports/runs/<run_id>
+```
+
+Response shape includes:
+
+- `run_id`, `status`, `report_summary`
+- `reports.migration_plan_report`
+- `reports.risk_report`
+- `reports.execution_report`
+- `reports.validation_report`
+
+Get individual reports:
+
+```bash
+curl http://localhost:8000/reports/runs/<run_id>/migration-plan
+curl http://localhost:8000/reports/runs/<run_id>/risk
+curl http://localhost:8000/reports/runs/<run_id>/execution
+curl http://localhost:8000/reports/runs/<run_id>/validation
+```
+
+If `run_id` does not exist, reports endpoints return `404`.
+
 ## Documentation Index
 
 - Architecture summary: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Detailed architecture notes and diagram references: [docs/high_level_architecture.md](docs/high_level_architecture.md)
 - Developer workflow and contributor notes: [docs/developer_guide.md](docs/developer_guide.md)
+- Known limitations and open risks: [docs/known_limitations.md](docs/known_limitations.md)
 - Agent responsibilities: [docs/agent_responsibilities.md](docs/agent_responsibilities.md)
 - Migration spec contract: [docs/migration_spec_schema.md](docs/migration_spec_schema.md)
 - Mapping rules references: [docs/mapping_rules_reference.md](docs/mapping_rules_reference.md)

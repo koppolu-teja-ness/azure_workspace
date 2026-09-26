@@ -75,6 +75,10 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 		"llm_traces": [],
 		"status": MigrationStatus.DISCOVERED,
 		"config": {
+			"approval": {
+				"auto_approve": True,
+				"auto_reviewer": "integration-test",
+			},
 			"bicep_paths": [str(bicep_file)],
 			"llm": {
 				"enabled": True,

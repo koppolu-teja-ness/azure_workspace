@@ -1,15 +1,9 @@
-"""Human Approval Gate — owner: charan
+"""Human Approval Gate — owner: charan.
 
-In the compiled graph this node is a natural interrupt point: LangGraph can
-pause execution here (e.g. `graph.compile(interrupt_before=["human_approval"])`)
-so a human can inspect state["risk_assessments"] and state["mappings"] before
-the graph is resumed with an ApprovalDecision written into state["approval"].
-
-Phase 0: stub that auto-approves, purely so the skeleton graph can run
-end-to-end without a human in the loop yet. Replace the `run()` body with a
-real UI-backed wait before Phase 2 (Streamlit or React, per the design doc).
-`route_after_approval` is the actual contract workflow.py depends on and
-should stay stable regardless of how `run()` evolves.
+Phase 2 behavior:
+- if approval.decision is already provided by UI/API, honor it
+- if decision is pending and config.approval.auto_approve is true, auto-approve
+- otherwise park the run in awaiting_approval so orchestration can stop safely
 """
 from __future__ import annotations
 
@@ -28,20 +22,60 @@ logger = logging.getLogger(__name__)
 
 
 def run(state: GraphState) -> dict[str, Any]:
-    logger.warning(
-        "approval_gate: stub auto-approval in effect — replace with a real "
-        "human-in-the-loop UI before Phase 2"
-    )
-    decision = ApprovalDecision(
-        decision=ApprovalDecisionValue.APPROVED,
-        reviewer="stub",
-        timestamp=datetime.now(UTC),
-        comments="Phase 0 stub auto-approval",
-    )
+    config = state.get("config", {})
+    approval_cfg = config.get("approval", {}) if isinstance(config, dict) else {}
+    auto_approve = bool(approval_cfg.get("auto_approve", False))
+    auto_reviewer = str(approval_cfg.get("auto_reviewer", "system-auto-approve"))
+
+    decision = state.get("approval", ApprovalDecision())
+    now = datetime.now(UTC)
+
+    if decision.decision == ApprovalDecisionValue.PENDING:
+        if auto_approve:
+            auto_decision = ApprovalDecision(
+                decision=ApprovalDecisionValue.APPROVED,
+                reviewer=auto_reviewer,
+                timestamp=now,
+                comments="Auto-approved by config.approval.auto_approve",
+            )
+            logger.info("approval_gate: auto-approved by configuration")
+            return {
+                "approval": auto_decision,
+                "status": MigrationStatus.APPROVED,
+            }
+
+        logger.info("approval_gate: awaiting human approval decision")
+        return {
+            "approval": decision,
+            "status": MigrationStatus.AWAITING_APPROVAL,
+        }
+
+    if decision.decision == ApprovalDecisionValue.APPROVED:
+        return {
+            "approval": _ensure_timestamp(decision, now),
+            "status": MigrationStatus.APPROVED,
+        }
+    if decision.decision == ApprovalDecisionValue.REJECTED:
+        return {
+            "approval": _ensure_timestamp(decision, now),
+            "status": MigrationStatus.REJECTED,
+        }
+
     return {
-        "approval": decision,
-        "status": MigrationStatus.APPROVED,
+        "approval": _ensure_timestamp(decision, now),
+        "status": MigrationStatus.AWAITING_APPROVAL,
     }
+
+
+def _ensure_timestamp(decision: ApprovalDecision, now: datetime) -> ApprovalDecision:
+    if decision.timestamp is not None:
+        return decision
+    return ApprovalDecision(
+        decision=decision.decision,
+        reviewer=decision.reviewer,
+        timestamp=now,
+        comments=decision.comments,
+    )
 
 
 def route_after_approval(state: GraphState) -> str:
@@ -49,6 +83,8 @@ def route_after_approval(state: GraphState) -> str:
     decision: approved -> deploy, rejected -> end, modified -> back to
     mapping for another pass."""
     decision = state.get("approval", ApprovalDecision()).decision
+    if decision == ApprovalDecisionValue.PENDING:
+        return "pending"
     if decision == ApprovalDecisionValue.APPROVED:
         return "approved"
     if decision == ApprovalDecisionValue.REJECTED:

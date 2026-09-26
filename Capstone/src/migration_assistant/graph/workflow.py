@@ -49,6 +49,7 @@ def build_graph():
         "human_approval",
         approval_gate.route_after_approval,
         {
+            "pending": END,
             "approved": "deploy",
             "rejected": END,
             "modified": "map",
