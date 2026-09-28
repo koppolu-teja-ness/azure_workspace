@@ -3,14 +3,15 @@
 Builds a dry-run CloudFormation deployment preview using the boto3 wrapper.
 No live deployment occurs in Phase 1.
 """
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from migration_assistant.config.app_config import parse_app_config
 from migration_assistant.cfn_generation.template_builder import build_template
 from migration_assistant.cfn_generation.yaml_writer import to_yaml
+from migration_assistant.config.app_config import parse_app_config
 from migration_assistant.deployment.boto3_client import Boto3ClientFactory
 from migration_assistant.deployment.cloudformation_deployer import CloudFormationDeployer
 from migration_assistant.graph.state import GraphState, MigrationStatus

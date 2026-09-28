@@ -9,6 +9,7 @@ This is the one agent shown as a class instead of a bare function, since it
 naturally holds a retriever/LLM client as instance state. `run()` still has
 the exact signature LangGraph expects — see base.py.
 """
+
 from __future__ import annotations
 
 import logging

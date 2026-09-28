@@ -7,6 +7,7 @@ generated CloudFormation templates, producing ValidationResult entries
 Phase 0: stub. Real implementation lives in validation/static/
 (cfn_lint_runner.py, checkov_runner.py, schema_validator.py).
 """
+
 from __future__ import annotations
 
 import logging
@@ -16,8 +17,13 @@ from typing import Any
 
 from migration_assistant.cfn_generation.template_builder import build_template
 from migration_assistant.cfn_generation.yaml_writer import to_yaml
-from migration_assistant.graph.state import GraphState, MigrationStatus
-from migration_assistant.graph.state import ValidationResult, ValidationStage, ValidationStatus
+from migration_assistant.graph.state import (
+    GraphState,
+    MigrationStatus,
+    ValidationResult,
+    ValidationStage,
+    ValidationStatus,
+)
 from migration_assistant.validation.static.cfn_lint_runner import run_cfn_lint
 from migration_assistant.validation.static.checkov_runner import run_checkov
 from migration_assistant.validation.static.schema_validator import validate_template_schema

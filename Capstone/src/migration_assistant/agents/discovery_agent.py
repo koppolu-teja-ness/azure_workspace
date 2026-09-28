@@ -9,13 +9,14 @@ the graph can be wired and smoke-tested end-to-end before real logic lands
 in Phase 1. See azure_discovery/ for where the real implementation should
 live (sdk_client.py, bicep_decompiler.py, resource_inventory.py).
 """
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-from migration_assistant.azure_discovery.sdk_client import discover_resource_group_resources
 from migration_assistant.azure_discovery.resource_inventory import discover_bicep_files
+from migration_assistant.azure_discovery.sdk_client import discover_resource_group_resources
 from migration_assistant.config.app_config import parse_app_config
 from migration_assistant.graph.state import GraphState, MigrationStatus
 

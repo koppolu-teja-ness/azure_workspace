@@ -4,6 +4,7 @@ graph from graph/workflow.py with basic argument handling.
 Usage:
     python scripts/run_migration_pipeline.py --run-id demo-001
 """
+
 from __future__ import annotations
 
 import argparse
@@ -55,7 +56,9 @@ def main() -> None:
     args = parser.parse_args()
 
     if not args.bedrock_model_id:
-        parser.error("Bedrock model id is required. Provide --bedrock-model-id or BEDROCK_MODEL_ID.")
+        parser.error(
+            "Bedrock model id is required. Provide --bedrock-model-id or BEDROCK_MODEL_ID."
+        )
 
     logging.basicConfig(level=logging.INFO)
 

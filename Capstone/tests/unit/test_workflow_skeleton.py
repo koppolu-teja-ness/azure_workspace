@@ -1,6 +1,7 @@
 """Smoke test: the LangGraph skeleton should compile and run end-to-end with
 every agent stubbed out. Run this after every merge point in Phase 1-3 to
 catch drift between the two branches."""
+
 from migration_assistant.graph.state import GraphState, MigrationStatus
 from migration_assistant.graph.workflow import build_graph
 
@@ -39,7 +40,7 @@ def test_graph_compiles_and_runs_end_to_end_with_stubs(monkeypatch):
                     "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
                     "temperature": 0.7,
                 },
-            }
+            },
         },
     }
 

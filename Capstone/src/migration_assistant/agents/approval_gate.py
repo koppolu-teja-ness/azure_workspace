@@ -5,6 +5,7 @@ Phase 2 behavior:
 - if decision is pending and config.approval.auto_approve is true, auto-approve
 - otherwise park the run in awaiting_approval so orchestration can stop safely
 """
+
 from __future__ import annotations
 
 import logging

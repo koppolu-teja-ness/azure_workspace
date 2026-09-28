@@ -1,5 +1,6 @@
 """Sanity tests for the Migration Spec contract — the one thing both
 branches depend on. Keep this passing at every merge point."""
+
 from migration_assistant.graph.state import (
     ApprovalDecision,
     LLMTraceEvent,
@@ -17,8 +18,7 @@ def test_migration_spec_round_trips_through_graph_state():
         source_resources=[
             SourceResource(
                 resource_id=(
-                    "/subscriptions/x/resourceGroups/y/providers/"
-                    "Microsoft.KeyVault/vaults/kv1"
+                    "/subscriptions/x/resourceGroups/y/providers/Microsoft.KeyVault/vaults/kv1"
                 ),
                 resource_type=ResourceType.KEY_VAULT,
                 name="kv1",

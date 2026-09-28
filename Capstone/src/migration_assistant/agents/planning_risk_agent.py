@@ -7,6 +7,7 @@ RiskAssessment entries.
 Phase 0: stub. Real implementation lives in planning/ (risk_scoring.py,
 sequencing.py).
 """
+
 from __future__ import annotations
 
 import logging

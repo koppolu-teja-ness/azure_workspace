@@ -1,4 +1,5 @@
 """Bedrock report summary helper for reporting agent."""
+
 from __future__ import annotations
 
 from typing import Any

@@ -12,6 +12,7 @@ through the graph at runtime. GraphState wraps the same pydantic models
 below; each node returns a partial dict update and LangGraph merges
 list-typed fields via `operator.add` (append), replacing scalar fields.
 """
+
 from __future__ import annotations
 
 import operator

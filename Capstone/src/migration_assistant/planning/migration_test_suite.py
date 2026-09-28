@@ -5,6 +5,7 @@ This module implements Person A Phase 3 checks:
 - dependency/referential integrity
 - missing-object detection
 """
+
 from __future__ import annotations
 
 from collections import defaultdict, deque
@@ -104,9 +105,7 @@ def _dependency_integrity_check(state: GraphState) -> dict[str, Any]:
             if indegree[child] == 0:
                 queue.append(child)
 
-    cycles_detected = [
-        node for node, degree in indegree.items() if degree > 0
-    ]
+    cycles_detected = [node for node, degree in indegree.items() if degree > 0]
 
     status = "pass"
     if invalid_dependencies or cycles_detected:
@@ -135,9 +134,7 @@ def _missing_object_check(state: GraphState) -> dict[str, Any]:
 
     source_ids = {resource.resource_id for resource in source_resources}
     mapped_source_ids = {
-        mapping.source_resource_id
-        for mapping in mappings
-        if mapping.target_logical_id
+        mapping.source_resource_id for mapping in mappings if mapping.target_logical_id
     }
     declared_mapping_source_ids = {mapping.source_resource_id for mapping in mappings}
 

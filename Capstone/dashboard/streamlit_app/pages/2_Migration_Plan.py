@@ -12,36 +12,36 @@ API_BASE = os.getenv("MIGRATION_API_BASE_URL", "http://localhost:8000")
 
 
 def _api_get(path: str) -> dict[str, Any]:
-	request = Request(f"{API_BASE}{path}", method="GET")
-	try:
-		with urlopen(request, timeout=5) as response:
-			return json.loads(response.read().decode("utf-8"))
-	except (HTTPError, URLError, TimeoutError) as exc:
-		raise RuntimeError(str(exc)) from exc
+    request = Request(f"{API_BASE}{path}", method="GET")
+    try:
+        with urlopen(request, timeout=5) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError) as exc:
+        raise RuntimeError(str(exc)) from exc
 
 
 st.title("Migration Plan")
 st.caption("Sequence and risk posture from the planning agent")
 
 try:
-	runs_response = _api_get("/approval/runs")
+    runs_response = _api_get("/approval/runs")
 except RuntimeError as exc:
-	st.error(f"Could not reach API at {API_BASE}: {exc}")
-	st.stop()
+    st.error(f"Could not reach API at {API_BASE}: {exc}")
+    st.stop()
 
 runs = runs_response.get("runs", [])
 if not runs:
-	st.warning("No runs available yet.")
-	st.stop()
+    st.warning("No runs available yet.")
+    st.stop()
 
 run_ids = [str(item.get("run_id", "")) for item in runs]
 selected_run_id = st.selectbox("Run", options=run_ids)
 
 try:
-	run_state = _api_get(f"/approval/runs/{selected_run_id}")
+    run_state = _api_get(f"/approval/runs/{selected_run_id}")
 except RuntimeError as exc:
-	st.error(f"Could not fetch run details: {exc}")
-	st.stop()
+    st.error(f"Could not fetch run details: {exc}")
+    st.stop()
 
 plan = run_state.get("config", {}).get("migration_plan", {})
 risk_summary = plan.get("risk_summary", {})
@@ -55,13 +55,13 @@ col4.metric("High Risk", risk_summary.get("high_risk", 0))
 st.subheader("Execution Sequence")
 sequence = plan.get("sequence", [])
 if sequence:
-	st.dataframe(sequence, use_container_width=True, hide_index=True)
+    st.dataframe(sequence, use_container_width=True, hide_index=True)
 else:
-	st.info("No sequencing metadata available for this run.")
+    st.info("No sequencing metadata available for this run.")
 
 st.subheader("Risk Assessments")
 risk_rows = run_state.get("risk_assessments", [])
 if risk_rows:
-	st.dataframe(risk_rows, use_container_width=True, hide_index=True)
+    st.dataframe(risk_rows, use_container_width=True, hide_index=True)
 else:
-	st.info("No risk assessments available.")
+    st.info("No risk assessments available.")

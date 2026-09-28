@@ -9,6 +9,7 @@ client or RAG retriever as state), subclass BaseAgent and expose a
 module-level `run` as a thin wrapper — see mapping_agent.py for an example
 of that pattern.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

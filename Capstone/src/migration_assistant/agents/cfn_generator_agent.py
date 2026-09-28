@@ -7,6 +7,7 @@ state["target_resources"].
 Phase 0: stub. Real implementation lives in cfn_generation/ (template
 builder + Jinja templates per resource type).
 """
+
 from __future__ import annotations
 
 import logging

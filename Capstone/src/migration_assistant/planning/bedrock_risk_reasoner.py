@@ -2,6 +2,7 @@
 
 Used to enrich deterministic risk assessments with concise rationale.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -56,7 +57,7 @@ def _build_prompt(mapping: MappingRecord, risk: RiskAssessment) -> str:
         "You are a cloud migration risk reviewer.\n"
         "Given a baseline risk assessment, propose up to 3 concise additional reasons.\n"
         "Do not change the risk level.\n\n"
-        "Return ONLY JSON: {\"additional_reasons\": [\"...\"]}.\n\n"
+        'Return ONLY JSON: {"additional_reasons": ["..."]}.\n\n'
         f"Mapping:\n{mapping.model_dump_json(indent=2)}\n\n"
         f"Risk assessment:\n{risk.model_dump_json(indent=2)}\n"
     )

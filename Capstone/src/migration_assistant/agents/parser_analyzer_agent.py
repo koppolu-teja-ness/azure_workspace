@@ -7,6 +7,7 @@ discovered upstream.
 Phase 0: stub. Real implementation lives in bicep_parser/ (bicep_to_arm.py,
 ast_parser.py, resource_graph.py).
 """
+
 from __future__ import annotations
 
 import logging

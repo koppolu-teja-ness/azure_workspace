@@ -69,7 +69,7 @@ def test_parse_llm_provider_config_normalizes_zero_temperature() -> None:
 
 
 def test_parse_json_object_accepts_wrapped_json() -> None:
-    text = "Here is output:\n```json\n{\"a\": 1, \"b\": [2]}\n```"
+    text = 'Here is output:\n```json\n{"a": 1, "b": [2]}\n```'
 
     parsed = parse_json_object(text)
 

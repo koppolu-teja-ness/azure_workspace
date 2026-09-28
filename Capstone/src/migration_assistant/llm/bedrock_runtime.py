@@ -3,6 +3,7 @@
 Centralizes config parsing and invoke_model response handling so multiple
 agents can use one provider contract.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -66,9 +67,7 @@ def require_bedrock_settings(*, app_config: AppConfig, agent_name: str) -> Bedro
             f"{agent_name}: llm.provider must be 'aws_bedrock', got '{provider.provider}'"
         )
     if provider.settings is None:
-        raise ValueError(
-            f"{agent_name}: incomplete Bedrock config; set llm.bedrock.model_id"
-        )
+        raise ValueError(f"{agent_name}: incomplete Bedrock config; set llm.bedrock.model_id")
     return provider.settings
 
 

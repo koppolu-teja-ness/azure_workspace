@@ -5,6 +5,7 @@ Metrics:
 - semantic_hit_at_k: expected AWS type appears in top-k global semantic search,
 - hybrid_top1_accuracy: hybrid retriever chosen mapping matches expected AWS type.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,11 +19,11 @@ SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from migration_assistant.graph.state import ResourceType, SourceResource
-from migration_assistant.mapping.rag_retriever import RuleBasedMappingRetriever
-
 
 def main() -> None:
+    from migration_assistant.graph.state import ResourceType, SourceResource
+    from migration_assistant.mapping.rag_retriever import RuleBasedMappingRetriever
+
     parser = argparse.ArgumentParser(description="Evaluate mapping retrieval quality")
     parser.add_argument(
         "--dataset",

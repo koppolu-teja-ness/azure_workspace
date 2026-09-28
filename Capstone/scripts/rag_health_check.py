@@ -6,6 +6,7 @@ Checks:
 3) pgvector extension + KB schema table availability,
 4) optional Bedrock embedding model invocation.
 """
+
 from __future__ import annotations
 
 import argparse

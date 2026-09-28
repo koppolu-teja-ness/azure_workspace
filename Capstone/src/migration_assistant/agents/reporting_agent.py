@@ -7,6 +7,7 @@ execution report, validation report).
 
 Phase 0: stub that just logs the final status.
 """
+
 from __future__ import annotations
 
 import logging

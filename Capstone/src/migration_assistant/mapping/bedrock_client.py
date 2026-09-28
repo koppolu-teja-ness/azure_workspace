@@ -3,6 +3,7 @@
 This module keeps LLM interaction isolated so the agent can switch between
 rule-based deterministic mapping and Bedrock-enhanced mapping via config.
 """
+
 from __future__ import annotations
 
 import logging
@@ -61,8 +62,7 @@ class BedrockMappingClient:
             source_resource_id=resource.resource_id,
             target_logical_id=parsed.get("target_logical_id")
             or deterministic_mapping.target_logical_id,
-            mapping_rule_id=parsed.get("mapping_rule_id")
-            or deterministic_mapping.mapping_rule_id,
+            mapping_rule_id=parsed.get("mapping_rule_id") or deterministic_mapping.mapping_rule_id,
             confidence=float(parsed.get("confidence", deterministic_mapping.confidence)),
             notes=list(parsed.get("notes", deterministic_mapping.notes)),
             unmapped_properties=list(
@@ -87,4 +87,3 @@ def _build_prompt(resource: SourceResource, deterministic_mapping: MappingRecord
         f"Source resource:\n{resource.model_dump_json(indent=2)}\n\n"
         f"Baseline mapping context:\n{deterministic_mapping.model_dump_json(indent=2)}\n"
     )
-

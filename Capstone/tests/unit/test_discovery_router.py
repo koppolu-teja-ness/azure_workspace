@@ -1,9 +1,8 @@
-from fastapi import HTTPException
-
 from api.dependencies import save_run
 from api.routers import discovery
-from migration_assistant.graph.state import MigrationStatus
+from fastapi import HTTPException
 
+from migration_assistant.graph.state import MigrationStatus
 
 LLM_CONFIG = {
     "llm": {
@@ -26,7 +25,10 @@ def test_execute_discovery_runs_pipeline_and_saves_state(monkeypatch) -> None:
                 **initial_state,
                 "source_resources": [
                     {
-                        "resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-demo",
+                        "resource_id": (
+                            "/subscriptions/demo/resourceGroups/rg/providers/"
+                            "Microsoft.KeyVault/vaults/kv-demo"
+                        ),
                         "resource_type": "Microsoft.KeyVault/vaults",
                         "name": "kv-demo",
                         "api_version": "2023-07-01",
@@ -69,7 +71,10 @@ def test_get_discovery_runs_lists_counts() -> None:
             "created_at": "2026-09-26T00:00:00+00:00",
             "source_resources": [
                 {
-                    "resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-1",
+                    "resource_id": (
+                        "/subscriptions/demo/resourceGroups/rg/providers/"
+                        "Microsoft.KeyVault/vaults/kv-1"
+                    ),
                     "resource_type": "Microsoft.KeyVault/vaults",
                     "name": "kv-1",
                     "api_version": "2023-07-01",
@@ -80,7 +85,10 @@ def test_get_discovery_runs_lists_counts() -> None:
             ],
             "mappings": [
                 {
-                    "source_resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-1",
+                    "source_resource_id": (
+                        "/subscriptions/demo/resourceGroups/rg/providers/"
+                        "Microsoft.KeyVault/vaults/kv-1"
+                    ),
                     "target_logical_id": "Kv1Secret",
                     "mapping_rule_id": "rule-keyvault-secretsmanager",
                     "confidence": 0.9,
@@ -88,7 +96,10 @@ def test_get_discovery_runs_lists_counts() -> None:
                     "unmapped_properties": [],
                 },
                 {
-                    "source_resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-1",
+                    "source_resource_id": (
+                        "/subscriptions/demo/resourceGroups/rg/providers/"
+                        "Microsoft.KeyVault/vaults/kv-1"
+                    ),
                     "target_logical_id": "Kv1Kms",
                     "mapping_rule_id": "rule-keyvaultkey-kmskey",
                     "confidence": 0.85,

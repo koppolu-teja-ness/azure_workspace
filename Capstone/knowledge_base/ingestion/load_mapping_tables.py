@@ -6,6 +6,7 @@ Owner: charan (Phase 1 — content). The schema it loads into
 Usage:
     python -m knowledge_base.ingestion.load_mapping_tables
 """
+
 from __future__ import annotations
 
 import json
@@ -23,9 +24,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 def load_json_seed(filename: str) -> list[dict[str, Any]]:
     path = DATA_DIR / filename
     if not path.exists():
-        logger.warning(
-            "Seed file not found (Phase 1 content not written yet): %s", path
-        )
+        logger.warning("Seed file not found (Phase 1 content not written yet): %s", path)
         return []
     with path.open() as f:
         return json.load(f)
