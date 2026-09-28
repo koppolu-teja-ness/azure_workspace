@@ -224,3 +224,57 @@ def test_mapping_retriever_falls_back_when_vector_distance_too_high(monkeypatch)
 	mapping = retriever.map_resource(resource)
 	assert mapping.mapping_rule_id == "rule-keyvault-secretsmanager"
 	assert mapping.confidence == 0.9
+
+
+def test_mapping_agent_keeps_deterministic_when_llm_below_override_threshold(monkeypatch) -> None:
+	def _mock_mapping_llm(*, settings, prompt, runtime_client=None):
+		_ = settings, prompt, runtime_client
+		return json.dumps(
+			{
+				"target_logical_id": "Kv1Kms",
+				"mapping_rule_id": "rule-keyvaultkey-kmskey",
+				"confidence": 0.2,
+				"notes": ["low confidence candidate"],
+				"unmapped_properties": [],
+			}
+		)
+
+	monkeypatch.setattr(
+		"migration_assistant.mapping.bedrock_client.invoke_bedrock_text",
+		_mock_mapping_llm,
+	)
+
+	state: GraphState = {
+		"run_id": "run-threshold-1",
+		"created_at": "2026-09-25T00:00:00+00:00",
+		"source_resources": [
+			SourceResource(
+				resource_id="/r/kv1",
+				resource_type=ResourceType.KEY_VAULT,
+				name="kv1",
+				bicep_symbolic_name="keyVault",
+				api_version="2023-02-01",
+				location="eastus",
+				properties={"tenantId": "__present__"},
+			)
+		],
+		"status": MigrationStatus.DISCOVERED,
+		"config": {
+			"mapping_policy": {"llm_override_threshold": 0.9},
+			"llm": {
+				"enabled": True,
+				"provider": "aws_bedrock",
+				"bedrock": {
+					"model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+					"temperature": 0.7,
+				},
+			},
+		},
+	}
+
+	update = mapping_agent.run(state)
+
+	mapping = update["mappings"][0]
+	assert mapping.mapping_rule_id == "rule-keyvault-secretsmanager"
+	assert mapping.confidence == 0.9
+	assert any("override threshold" in note for note in mapping.notes)

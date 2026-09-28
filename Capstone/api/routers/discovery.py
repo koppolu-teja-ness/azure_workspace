@@ -12,6 +12,7 @@ from api.dependencies import (
 	list_runs,
 	require_workflow_bedrock_config,
 	save_run,
+	save_run_checkpoint,
 )
 from migration_assistant.graph.state import GraphState, MigrationStatus
 from migration_assistant.graph.workflow import build_graph
@@ -57,6 +58,7 @@ def execute_discovery(payload: DiscoveryRunRequest) -> dict[str, object]:
 		raise HTTPException(status_code=500, detail=f"Discovery execution failed: {exc}") from exc
 
 	save_run(final_state)
+	save_run_checkpoint(final_state, stage="workflow_complete")
 	return dump_jsonable_state(final_state)
 
 

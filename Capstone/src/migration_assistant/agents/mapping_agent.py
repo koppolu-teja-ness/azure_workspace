@@ -41,6 +41,7 @@ class MappingAgent(BaseAgent):
         ]
 
         app_config = parse_app_config(state.get("config"))
+        override_threshold = max(0.0, min(1.0, app_config.mapping_policy.llm_override_threshold))
         settings = require_bedrock_settings(
             app_config=app_config,
             agent_name=self.name,
@@ -53,8 +54,19 @@ class MappingAgent(BaseAgent):
             deterministic_mappings,
             strict=False,
         ):
-            mapped, trace = llm_client.map_resource(resource, base_mapping)
-            mappings.append(mapped)
+            candidate, trace = llm_client.map_resource(resource, base_mapping)
+            if candidate.confidence >= override_threshold:
+                mappings.append(candidate)
+            else:
+                base_mapping.notes = [
+                    *base_mapping.notes,
+                    (
+                        "Retained deterministic mapping because LLM confidence "
+                        f"{candidate.confidence:.2f} is below override threshold "
+                        f"{override_threshold:.2f}."
+                    ),
+                ]
+                mappings.append(base_mapping)
             llm_traces.append(trace)
 
         logger.info(

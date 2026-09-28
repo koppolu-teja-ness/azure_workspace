@@ -20,6 +20,11 @@ try:
 		graph_state_to_spec,
 		spec_to_graph_state,
 	)
+	from migration_assistant.graph.checkpoints import (
+		get_latest_checkpoint,
+		list_checkpoints,
+		save_checkpoint,
+	)
 	from migration_assistant.config.app_config import parse_app_config
 	from migration_assistant.llm.bedrock_runtime import require_bedrock_settings
 except ModuleNotFoundError:
@@ -33,6 +38,11 @@ except ModuleNotFoundError:
 		MigrationStatus,
 		graph_state_to_spec,
 		spec_to_graph_state,
+	)
+	from migration_assistant.graph.checkpoints import (  # type: ignore[no-redef]
+		get_latest_checkpoint,
+		list_checkpoints,
+		save_checkpoint,
 	)
 	from migration_assistant.config.app_config import parse_app_config  # type: ignore[no-redef]
 	from migration_assistant.llm.bedrock_runtime import (  # type: ignore[no-redef]
@@ -98,6 +108,29 @@ def list_runs() -> list[GraphState]:
 				rows = cur.fetchall()
 
 	return [_state_from_payload(row[0]) for row in rows]
+
+
+def save_run_checkpoint(state: GraphState, *, stage: str) -> None:
+	with _LOCK:
+		with _connect() as conn:
+			save_checkpoint(
+				conn=conn,
+				run_id=state["run_id"],
+				stage=stage,
+				state=state,
+			)
+
+
+def get_latest_run_checkpoint(run_id: str) -> tuple[str, GraphState] | None:
+	with _LOCK:
+		with _connect() as conn:
+			return get_latest_checkpoint(conn=conn, run_id=run_id)
+
+
+def list_run_checkpoints(run_id: str) -> list[dict[str, Any]]:
+	with _LOCK:
+		with _connect() as conn:
+			return list_checkpoints(conn=conn, run_id=run_id)
 
 
 def require_workflow_bedrock_config(config: dict[str, Any]) -> None:

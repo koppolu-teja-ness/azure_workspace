@@ -25,6 +25,7 @@ except Exception:  # pragma: no cover - optional dependency in local dev
 	psycopg = None
 
 from migration_assistant.graph.state import MappingRecord, ResourceType, SourceResource
+from migration_assistant.mapping.mapping_rules import functions_rules, keyvault_rules, vnet_rules
 from migration_assistant.mapping.equivalence_models import load_property_rules
 
 logger = logging.getLogger(__name__)
@@ -138,12 +139,17 @@ class RuleBasedMappingRetriever:
 			)
 
 		logical_id = _build_logical_id(resource.name, selected_rule.aws_resource_type)
+		adjusted_confidence, adjusted_notes = _apply_domain_rules(
+			resource,
+			confidence=selected_rule.confidence,
+			notes=selected_rule.notes,
+		)
 		property_rules = self._property_rules.get(resource.resource_type, [])
 		mapped_properties = {item.azure_property for item in property_rules}
 		source_property_keys = set(resource.properties.keys())
 		unmapped_properties = sorted(source_property_keys - mapped_properties)
 
-		notes = list(selected_rule.notes)
+		notes = list(adjusted_notes)
 		if vector_match is not None:
 			notes.append(
 				"Hybrid retrieval used pgvector cosine similarity with exact type filter."
@@ -161,7 +167,7 @@ class RuleBasedMappingRetriever:
 			source_resource_id=resource.resource_id,
 			target_logical_id=logical_id,
 			mapping_rule_id=selected_rule.rule_id,
-			confidence=selected_rule.confidence,
+			confidence=adjusted_confidence,
 			notes=notes,
 			unmapped_properties=unmapped_properties,
 		)
@@ -359,3 +365,48 @@ def _load_rules_from_json(
 		rules[resource_type] = rule
 
 	return rules
+
+
+def _apply_domain_rules(
+	resource: SourceResource,
+	*,
+	confidence: float,
+	notes: tuple[str, ...],
+) -> tuple[float, tuple[str, ...]]:
+	current_confidence = confidence
+	current_notes = notes
+
+	if resource.resource_type in {
+		ResourceType.KEY_VAULT,
+		ResourceType.KEY_VAULT_SECRET,
+		ResourceType.KEY_VAULT_KEY,
+		ResourceType.KEY_VAULT_CERTIFICATE,
+	}:
+		current_confidence, current_notes = keyvault_rules.apply(
+			resource,
+			confidence=current_confidence,
+			notes=current_notes,
+		)
+
+	if resource.resource_type == ResourceType.FUNCTION_APP:
+		current_confidence, current_notes = functions_rules.apply(
+			resource,
+			confidence=current_confidence,
+			notes=current_notes,
+		)
+
+	if resource.resource_type in {
+		ResourceType.VNET,
+		ResourceType.SUBNET,
+		ResourceType.NSG,
+		ResourceType.ROUTE_TABLE,
+		ResourceType.VNET_PEERING,
+		ResourceType.PRIVATE_ENDPOINT,
+	}:
+		current_confidence, current_notes = vnet_rules.apply(
+			resource,
+			confidence=current_confidence,
+			notes=current_notes,
+		)
+
+	return current_confidence, current_notes

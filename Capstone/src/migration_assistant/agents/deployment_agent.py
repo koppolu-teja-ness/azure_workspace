@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from migration_assistant.config.app_config import parse_app_config
 from migration_assistant.cfn_generation.template_builder import build_template
 from migration_assistant.cfn_generation.yaml_writer import to_yaml
 from migration_assistant.deployment.boto3_client import Boto3ClientFactory
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def run(state: GraphState) -> dict[str, Any]:
+    app_config = parse_app_config(state.get("config"))
     config = dict(state.get("config", {}))
     target_resources = state.get("target_resources", [])
     deployment_cfg = config.get("deployment", {})
@@ -44,9 +46,11 @@ def run(state: GraphState) -> dict[str, Any]:
 
     client_factory = Boto3ClientFactory.from_state_config(config)
     live_deploy_enabled = bool(deployment_cfg.get("enable_live_deploy", False))
+    cleanup_mode = app_config.deployment.rollback_cleanup_mode
     deployer = CloudFormationDeployer(
         client_factory=client_factory,
         live_deploy_enabled=live_deploy_enabled,
+        cleanup_on_failure=(cleanup_mode == "delete_artifacts"),
     )
 
     live_deploy_requested = bool(deployment_cfg.get("live_deploy", False))

@@ -23,6 +23,30 @@ class RiskThresholdsConfig(BaseModel):
     min_auto_migratable_confidence: float = 0.85
 
 
+class ParserConfig(BaseModel):
+    prefer_azure_cli_compile: bool = True
+    allow_fallback_parser: bool = True
+
+
+class AzureDiscoveryConfig(BaseModel):
+    enable_sdk_discovery: bool = False
+    subscription_id: str | None = None
+    resource_group: str | None = None
+
+
+class MappingPolicyConfig(BaseModel):
+    llm_override_threshold: float = 0.9
+
+
+class DeploymentConfig(BaseModel):
+    rollback_cleanup_mode: str = "delete_artifacts"
+
+
+class CheckpointConfig(BaseModel):
+    backend: str = "postgres"
+    enabled: bool = True
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -30,6 +54,11 @@ class AppConfig(BaseModel):
     bicep_directories: list[str] = Field(default_factory=list)
     discovered_bicep_files: list[str] = Field(default_factory=list)
     risk_thresholds: RiskThresholdsConfig = Field(default_factory=RiskThresholdsConfig)
+    parser: ParserConfig = Field(default_factory=ParserConfig)
+    azure_discovery: AzureDiscoveryConfig = Field(default_factory=AzureDiscoveryConfig)
+    mapping_policy: MappingPolicyConfig = Field(default_factory=MappingPolicyConfig)
+    deployment: DeploymentConfig = Field(default_factory=DeploymentConfig)
+    checkpoints: CheckpointConfig = Field(default_factory=CheckpointConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     report_summary: str | None = None
 

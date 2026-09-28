@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from migration_assistant.deployment.boto3_client import Boto3ClientFactory
+from migration_assistant.deployment.rollback import cleanup_failed_deployment
 from migration_assistant.graph.state import TargetResource
 
 
@@ -45,9 +46,11 @@ class CloudFormationDeployer:
 		*,
 		client_factory: Boto3ClientFactory,
 		live_deploy_enabled: bool = False,
+		cleanup_on_failure: bool = True,
 	) -> None:
 		self._client_factory = client_factory
 		self._live_deploy_enabled = live_deploy_enabled
+		self._cleanup_on_failure = cleanup_on_failure
 
 	def preview_deployment(
 		self,
@@ -103,35 +106,47 @@ class CloudFormationDeployer:
 		change_set_type = self._detect_change_set_type(resolved_stack_name)
 
 		client = self._client_factory.cloudformation_client()
-		response = client.create_change_set(
-			StackName=resolved_stack_name,
-			ChangeSetName=change_set_name,
-			ChangeSetType=change_set_type,
-			TemplateBody=template_body,
-			Capabilities=["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"],
-		)
-		change_set_id = response.get("Id")
-
-		result: dict[str, Any] = {
-			"mode": "live",
-			"stack_name": resolved_stack_name,
-			"change_set_name": change_set_name,
-			"change_set_type": change_set_type,
-			"change_set_id": change_set_id,
-			"executed": False,
-			"region_name": self._client_factory.region_name,
-		}
-
-		if execute_change_set:
-			waiter = client.get_waiter("change_set_create_complete")
-			waiter.wait(StackName=resolved_stack_name, ChangeSetName=change_set_name)
-			client.execute_change_set(
+		cleanup_result: dict[str, Any] | None = None
+		try:
+			response = client.create_change_set(
 				StackName=resolved_stack_name,
 				ChangeSetName=change_set_name,
+				ChangeSetType=change_set_type,
+				TemplateBody=template_body,
+				Capabilities=["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"],
 			)
-			result["executed"] = True
+			change_set_id = response.get("Id")
 
-		return result
+			result: dict[str, Any] = {
+				"mode": "live",
+				"stack_name": resolved_stack_name,
+				"change_set_name": change_set_name,
+				"change_set_type": change_set_type,
+				"change_set_id": change_set_id,
+				"executed": False,
+				"region_name": self._client_factory.region_name,
+			}
+
+			if execute_change_set:
+				waiter = client.get_waiter("change_set_create_complete")
+				waiter.wait(StackName=resolved_stack_name, ChangeSetName=change_set_name)
+				client.execute_change_set(
+					StackName=resolved_stack_name,
+					ChangeSetName=change_set_name,
+				)
+				result["executed"] = True
+
+			return result
+		except Exception:
+			if self._cleanup_on_failure:
+				cleanup_result = cleanup_failed_deployment(
+					cloudformation_client=client,
+					stack_name=resolved_stack_name,
+					change_set_name=change_set_name,
+					change_set_type=change_set_type,
+				)
+				raise RuntimeError(f"Live deployment failed; cleanup={cleanup_result}")
+			raise RuntimeError("Live deployment failed.")
 
 	def _detect_change_set_type(self, stack_name: str) -> str:
 		client = self._client_factory.cloudformation_client()

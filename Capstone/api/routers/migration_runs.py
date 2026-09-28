@@ -8,9 +8,12 @@ from pydantic import BaseModel, Field
 
 from api.dependencies import (
 	dump_jsonable_state,
+	get_latest_run_checkpoint,
 	get_run,
+	list_run_checkpoints,
 	require_workflow_bedrock_config,
 	save_run,
+	save_run_checkpoint,
 )
 from migration_assistant.agents import (
 	cfn_generator_agent,
@@ -51,6 +54,14 @@ LIST_MERGE_KEYS = {
 	"llm_traces",
 }
 
+TARGET_STAGE_ORDER = [
+	"generate_cfn",
+	"static_validate",
+	"deploy",
+	"post_deploy_validate",
+	"report",
+]
+
 
 @router.post("/execute")
 def execute_run(payload: ExecuteRunRequest) -> dict[str, object]:
@@ -83,6 +94,7 @@ def execute_run(payload: ExecuteRunRequest) -> dict[str, object]:
 		raise HTTPException(status_code=500, detail=f"Run execution failed: {exc}") from exc
 
 	save_run(final_state)
+	save_run_checkpoint(final_state, stage="workflow_complete")
 	return dump_jsonable_state(final_state)
 
 
@@ -92,6 +104,54 @@ def get_run_detail(run_id: str) -> dict[str, object]:
 		state = get_run(run_id)
 	except KeyError as exc:
 		raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found") from exc
+	return dump_jsonable_state(state)
+
+
+@router.get("/{run_id}/checkpoints")
+def get_run_checkpoints(run_id: str) -> dict[str, object]:
+	items = list_run_checkpoints(run_id)
+	return {"run_id": run_id, "checkpoints": items}
+
+
+@router.post("/{run_id}/resume-target")
+def resume_target_for_run(run_id: str) -> dict[str, object]:
+	latest = get_latest_run_checkpoint(run_id)
+	if latest is None:
+		raise HTTPException(
+			status_code=404,
+			detail=f"No checkpoints found for run '{run_id}'",
+		)
+
+	stage, state = latest
+	if state.get("run_id") != run_id:
+		raise HTTPException(
+			status_code=400,
+			detail="Checkpoint run_id mismatch.",
+		)
+
+	if stage in {"target_pipeline_complete", "workflow_complete"}:
+		save_run(state)
+		return dump_jsonable_state(state)
+
+	if stage not in TARGET_STAGE_ORDER:
+		raise HTTPException(
+			status_code=400,
+			detail=(
+				f"Checkpoint stage '{stage}' is not resumable for target pipeline. "
+				f"Valid stages: {', '.join(TARGET_STAGE_ORDER)}"
+			),
+		)
+
+	try:
+		require_workflow_bedrock_config(state.get("config", {}))
+	except ValueError as exc:
+		raise HTTPException(status_code=400, detail=f"Invalid LLM config: {exc}") from exc
+
+	start_at = TARGET_STAGE_ORDER.index(stage) + 1
+	_execute_target_stages_or_raise(state, start_at_index=start_at)
+
+	save_run(state)
+	save_run_checkpoint(state, stage="target_pipeline_complete")
 	return dump_jsonable_state(state)
 
 
@@ -112,6 +172,7 @@ def execute_target_from_spec(payload: ExecuteTargetFromSpecRequest) -> dict[str,
 	_execute_target_stages_or_raise(state)
 
 	save_run(state)
+	save_run_checkpoint(state, stage="target_pipeline_complete")
 	return dump_jsonable_state(state)
 
 
@@ -140,6 +201,7 @@ def execute_target_for_run(run_id: str) -> dict[str, object]:
 	_execute_target_stages_or_raise(state)
 
 	save_run(state)
+	save_run_checkpoint(state, stage="target_pipeline_complete")
 	return dump_jsonable_state(state)
 
 
@@ -156,19 +218,24 @@ def _apply_graph_update(state: GraphState, update: dict[str, Any]) -> None:
 		state[key] = value
 
 
-def _execute_target_stages_or_raise(state: GraphState) -> None:
+def _execute_target_stages_or_raise(
+	state: GraphState,
+	*,
+	start_at_index: int = 0,
+) -> None:
 	target_stage_agents = [
-		cfn_generator_agent.run,
-		static_validation_agent.run,
-		deployment_agent.run,
-		post_deploy_validation_agent.run,
-		reporting_agent.run,
+		("generate_cfn", cfn_generator_agent.run),
+		("static_validate", static_validation_agent.run),
+		("deploy", deployment_agent.run),
+		("post_deploy_validate", post_deploy_validation_agent.run),
+		("report", reporting_agent.run),
 	]
 
 	try:
-		for stage_runner in target_stage_agents:
+		for stage_name, stage_runner in target_stage_agents[start_at_index:]:
 			update = stage_runner(state)
 			_apply_graph_update(state, update)
+			save_run_checkpoint(state, stage=stage_name)
 	except ValueError as exc:
 		raise HTTPException(status_code=400, detail=f"Target pipeline config error: {exc}") from exc
 	except Exception as exc:
