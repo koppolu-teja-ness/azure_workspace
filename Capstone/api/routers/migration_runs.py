@@ -6,7 +6,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from api.dependencies import dump_jsonable_state, get_run, save_run
+from api.dependencies import (
+	dump_jsonable_state,
+	get_run,
+	require_workflow_bedrock_config,
+	save_run,
+)
 from migration_assistant.agents import (
 	cfn_generator_agent,
 	deployment_agent,
@@ -68,6 +73,11 @@ def execute_run(payload: ExecuteRunRequest) -> dict[str, object]:
 	}
 
 	try:
+		require_workflow_bedrock_config(state_config)
+	except ValueError as exc:
+		raise HTTPException(status_code=400, detail=f"Invalid LLM config: {exc}") from exc
+
+	try:
 		final_state = app.invoke(initial_state)
 	except Exception as exc:
 		raise HTTPException(status_code=500, detail=f"Run execution failed: {exc}") from exc
@@ -93,6 +103,12 @@ def execute_target_from_spec(payload: ExecuteTargetFromSpecRequest) -> dict[str,
 		raise HTTPException(status_code=400, detail=f"Invalid migration_spec payload: {exc}") from exc
 
 	state = spec_to_graph_state(spec)
+
+	try:
+		require_workflow_bedrock_config(state.get("config", {}))
+	except ValueError as exc:
+		raise HTTPException(status_code=400, detail=f"Invalid LLM config: {exc}") from exc
+
 	_execute_target_stages_or_raise(state)
 
 	save_run(state)
@@ -115,6 +131,11 @@ def execute_target_for_run(run_id: str) -> dict[str, object]:
 	# Normalize persisted state through contract validation before target execution.
 	spec = graph_state_to_spec(state)
 	state = spec_to_graph_state(spec)
+
+	try:
+		require_workflow_bedrock_config(state.get("config", {}))
+	except ValueError as exc:
+		raise HTTPException(status_code=400, detail=f"Invalid LLM config: {exc}") from exc
 
 	_execute_target_stages_or_raise(state)
 

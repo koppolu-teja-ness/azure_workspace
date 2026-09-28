@@ -5,6 +5,20 @@ from api.routers import migration_runs
 from migration_assistant.graph.state import MigrationStatus
 
 
+LLM_CONFIG = {
+    "llm": {
+        "enabled": True,
+        "provider": "aws_bedrock",
+        "bedrock": {
+            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+            "region_name": "us-east-1",
+            "temperature": 0.7,
+            "max_tokens": 512,
+        },
+    }
+}
+
+
 def test_execute_target_from_spec_runs_target_stages(monkeypatch) -> None:
     payload = migration_runs.ExecuteTargetFromSpecRequest(
         migration_spec={
@@ -32,7 +46,7 @@ def test_execute_target_from_spec_runs_target_stages(monkeypatch) -> None:
                 }
             ],
             "status": "approved",
-            "config": {},
+            "config": {**LLM_CONFIG},
         }
     )
 
@@ -167,7 +181,7 @@ def test_execute_target_for_stored_run_executes_target_stages(monkeypatch) -> No
                 }
             ],
             "status": MigrationStatus.APPROVED,
-            "config": {},
+            "config": {**LLM_CONFIG},
         }
     )
 
@@ -226,7 +240,7 @@ def test_execute_target_for_stored_run_requires_source_resources() -> None:
             "created_at": "2026-09-26T00:00:00+00:00",
             "source_resources": [],
             "status": MigrationStatus.APPROVED,
-            "config": {},
+            "config": {**LLM_CONFIG},
         }
     )
 

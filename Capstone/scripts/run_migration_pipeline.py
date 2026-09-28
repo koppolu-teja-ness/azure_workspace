@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 from datetime import UTC, datetime
 
 from migration_assistant.graph.state import GraphState, MigrationStatus
@@ -29,7 +30,32 @@ def main() -> None:
         default=[],
         help="Directory to recursively scan for .bicep files (can be repeated).",
     )
+    parser.add_argument(
+        "--bedrock-model-id",
+        default=os.getenv("BEDROCK_MODEL_ID", "").strip(),
+        help="Bedrock model id (or set BEDROCK_MODEL_ID env var).",
+    )
+    parser.add_argument(
+        "--bedrock-region",
+        default=os.getenv("BEDROCK_REGION", os.getenv("AWS_REGION", "us-east-1")),
+        help="Bedrock region name.",
+    )
+    parser.add_argument(
+        "--bedrock-temperature",
+        type=float,
+        default=0.7,
+        help="Bedrock generation temperature.",
+    )
+    parser.add_argument(
+        "--bedrock-max-tokens",
+        type=int,
+        default=800,
+        help="Bedrock max output tokens.",
+    )
     args = parser.parse_args()
+
+    if not args.bedrock_model_id:
+        parser.error("Bedrock model id is required. Provide --bedrock-model-id or BEDROCK_MODEL_ID.")
 
     logging.basicConfig(level=logging.INFO)
 
@@ -46,6 +72,16 @@ def main() -> None:
         "config": {
             "bicep_paths": args.bicep,
             "bicep_directories": args.bicep_dir,
+            "llm": {
+                "enabled": True,
+                "provider": "aws_bedrock",
+                "bedrock": {
+                    "model_id": args.bedrock_model_id,
+                    "region_name": args.bedrock_region,
+                    "temperature": float(args.bedrock_temperature),
+                    "max_tokens": int(args.bedrock_max_tokens),
+                },
+            },
         },
     }
 

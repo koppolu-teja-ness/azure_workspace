@@ -79,6 +79,16 @@ curl -X POST http://localhost:8000/discovery/runs \
 		"bicep_paths": [],
 		"bicep_directories": ["tests/fixtures/sample_bicep"],
 		"config": {
+			"llm": {
+				"enabled": true,
+				"provider": "aws_bedrock",
+				"bedrock": {
+					"model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+					"region_name": "us-east-1",
+					"temperature": 0.7,
+					"max_tokens": 512
+				}
+			},
 			"approval": {
 				"auto_approve": false
 			}

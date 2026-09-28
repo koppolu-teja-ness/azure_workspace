@@ -36,9 +36,50 @@ def _api_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
 
 
 st.title("Discovery")
-st.caption("Run discovery + planning pipeline and inspect source inventory")
+st.caption("Run discovery + planning pipeline (Bedrock required) and inspect source inventory")
 
 default_run_id = f"run-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+default_model_id = os.getenv("BEDROCK_MODEL_ID", "")
+default_region = os.getenv("BEDROCK_REGION", os.getenv("AWS_REGION", "us-east-1"))
+
+if "readiness_checked_at" not in st.session_state:
+	st.session_state["readiness_checked_at"] = datetime.now(UTC).strftime("%H:%M:%S UTC")
+
+if st.button("Refresh Readiness", key="refresh_readiness"):
+	st.session_state["readiness_checked_at"] = datetime.now(UTC).strftime("%H:%M:%S UTC")
+	st.rerun()
+
+st.subheader("Runtime Readiness")
+bedrock_ready = bool(default_model_id.strip())
+api_ready = False
+db_ready = False
+run_count = 0
+db_error = ""
+
+try:
+	health_payload = _api_get("/health")
+	api_ready = True
+	db_ready = health_payload.get("db_status") == "ok"
+	run_count = int(health_payload.get("runs", 0))
+	db_error = str(health_payload.get("db_error", ""))
+except RuntimeError as exc:
+	db_error = str(exc)
+
+readiness_col1, readiness_col2, readiness_col3 = st.columns(3)
+readiness_col1.metric("Bedrock Config", "Ready" if bedrock_ready else "Missing")
+readiness_col2.metric("API Connectivity", "Connected" if api_ready else "Disconnected")
+readiness_col3.metric("Postgres Readiness", "Ready" if db_ready else "Unavailable")
+
+if api_ready and db_ready:
+	st.caption(f"Run store reachable. Existing runs in DB: {run_count}")
+else:
+	st.warning(
+		"Runtime not fully ready. Check API process, Postgres container, and DATABASE_URL before running discovery."
+	)
+	if db_error:
+		st.caption(f"Last connectivity detail: {db_error}")
+
+st.caption(f"Last checked: {st.session_state['readiness_checked_at']}")
 
 with st.form("discovery_form"):
 	run_id = st.text_input("Run ID", value=default_run_id)
@@ -50,6 +91,16 @@ with st.form("discovery_form"):
 		"Bicep directories (one per line)",
 		placeholder="tests/fixtures/sample_bicep",
 	)
+	st.subheader("Bedrock LLM Configuration")
+	model_id = st.text_input(
+		"Model ID",
+		value=default_model_id,
+		placeholder="anthropic.claude-3-5-sonnet-20240620-v1:0",
+	)
+	region_name = st.text_input("Region", value=default_region)
+	col1, col2 = st.columns(2)
+	temperature = col1.number_input("Temperature", min_value=0.0, max_value=1.0, value=0.7)
+	max_tokens = col2.number_input("Max Tokens", min_value=64, max_value=8192, value=800, step=64)
 	auto_approve = st.checkbox("Auto-approve run", value=False)
 	submitted = st.form_submit_button("Run Discovery")
 
@@ -57,6 +108,14 @@ if submitted:
 	run_id = run_id.strip()
 	if not run_id:
 		st.error("Run ID is required.")
+		st.stop()
+	model_id = model_id.strip()
+	region_name = region_name.strip()
+	if not model_id:
+		st.error("Bedrock model ID is required.")
+		st.stop()
+	if not region_name:
+		st.error("Bedrock region is required.")
 		st.stop()
 
 	bicep_paths = [line.strip() for line in bicep_paths_text.splitlines() if line.strip()]
@@ -66,7 +125,19 @@ if submitted:
 		"run_id": run_id,
 		"bicep_paths": bicep_paths,
 		"bicep_directories": bicep_directories,
-		"config": {"approval": {"auto_approve": auto_approve}},
+		"config": {
+			"approval": {"auto_approve": auto_approve},
+			"llm": {
+				"enabled": True,
+				"provider": "aws_bedrock",
+				"bedrock": {
+					"model_id": model_id,
+					"region_name": region_name,
+					"temperature": float(temperature),
+					"max_tokens": int(max_tokens),
+				},
+			},
+		},
 	}
 	try:
 		result = _api_post("/discovery/runs", payload)

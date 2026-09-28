@@ -80,7 +80,7 @@ Notes:
 Discovery and target-stage API quick checks:
 
 ```bash
-curl -X POST http://localhost:8000/discovery/runs -H "Content-Type: application/json" -d '{"run_id":"dev-discovery-1","bicep_paths":[],"bicep_directories":["tests/fixtures/sample_bicep"],"config":{"approval":{"auto_approve":false}}}'
+curl -X POST http://localhost:8000/discovery/runs -H "Content-Type: application/json" -d '{"run_id":"dev-discovery-1","bicep_paths":[],"bicep_directories":["tests/fixtures/sample_bicep"],"config":{"approval":{"auto_approve":false},"llm":{"enabled":true,"provider":"aws_bedrock","bedrock":{"model_id":"anthropic.claude-3-5-sonnet-20240620-v1:0","region_name":"us-east-1","temperature":0.7,"max_tokens":512}}}}'
 curl http://localhost:8000/discovery/runs
 curl -X POST http://localhost:8000/runs/<run_id>/execute-target
 ```
@@ -136,9 +136,10 @@ Current behavior in code:
 
 - Mapping and planning paths call `require_bedrock_settings(...)` in their
   current implementations.
-- Missing required Bedrock settings will raise a configuration error for those
-  paths.
-- Reporting currently returns early in stub mode before Bedrock summary logic.
+- Reporting also calls `require_bedrock_settings(...)` and generates summary
+  content through Bedrock.
+- Missing required Bedrock settings will raise a configuration error before
+  workflow execution in API entrypoints.
 
 Related modules:
 

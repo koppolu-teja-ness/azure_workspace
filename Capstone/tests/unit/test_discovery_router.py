@@ -5,6 +5,20 @@ from api.routers import discovery
 from migration_assistant.graph.state import MigrationStatus
 
 
+LLM_CONFIG = {
+    "llm": {
+        "enabled": True,
+        "provider": "aws_bedrock",
+        "bedrock": {
+            "model_id": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+            "region_name": "us-east-1",
+            "temperature": 0.7,
+            "max_tokens": 512,
+        },
+    }
+}
+
+
 def test_execute_discovery_runs_pipeline_and_saves_state(monkeypatch) -> None:
     class _FakeGraph:
         def invoke(self, initial_state):
@@ -34,7 +48,7 @@ def test_execute_discovery_runs_pipeline_and_saves_state(monkeypatch) -> None:
         run_id="phase4-discovery-router-1",
         bicep_paths=["tests/fixtures/sample_bicep/keyvault.bicep"],
         bicep_directories=[],
-        config={"approval": {"auto_approve": False}},
+        config={"approval": {"auto_approve": False}, **LLM_CONFIG},
     )
 
     result = discovery.execute_discovery(payload)
@@ -53,14 +67,42 @@ def test_get_discovery_runs_lists_counts() -> None:
         {
             "run_id": run_id,
             "created_at": "2026-09-26T00:00:00+00:00",
-            "source_resources": [{}],
-            "mappings": [{}, {}],
+            "source_resources": [
+                {
+                    "resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-1",
+                    "resource_type": "Microsoft.KeyVault/vaults",
+                    "name": "kv-1",
+                    "api_version": "2023-07-01",
+                    "location": "eastus",
+                    "properties": {},
+                    "depends_on": [],
+                }
+            ],
+            "mappings": [
+                {
+                    "source_resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-1",
+                    "target_logical_id": "Kv1Secret",
+                    "mapping_rule_id": "rule-keyvault-secretsmanager",
+                    "confidence": 0.9,
+                    "notes": [],
+                    "unmapped_properties": [],
+                },
+                {
+                    "source_resource_id": "/subscriptions/demo/resourceGroups/rg/providers/Microsoft.KeyVault/vaults/kv-1",
+                    "target_logical_id": "Kv1Kms",
+                    "mapping_rule_id": "rule-keyvaultkey-kmskey",
+                    "confidence": 0.85,
+                    "notes": [],
+                    "unmapped_properties": [],
+                },
+            ],
             "status": MigrationStatus.PARSED,
             "config": {
                 "discovered_bicep_files": [
                     "tests/fixtures/sample_bicep/keyvault.bicep",
                     "tests/fixtures/sample_bicep/vnet.bicep",
-                ]
+                ],
+                **LLM_CONFIG,
             },
         }
     )

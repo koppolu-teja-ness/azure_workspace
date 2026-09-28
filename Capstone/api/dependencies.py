@@ -1,23 +1,27 @@
-"""Shared in-memory run store for API routers.
-
-This is intentionally lightweight for capstone/demo usage.
-"""
+"""Shared run store and workflow config validation helpers for API routers."""
 from __future__ import annotations
 
 from copy import deepcopy
+import json
+import os
 from pathlib import Path
 import sys
 from threading import Lock
 from typing import Any
 
+import psycopg
+
 try:
 	from migration_assistant.graph.state import (
 		ApprovalDecision,
 		GraphState,
-		MappingRecord,
+		MigrationSpec,
 		MigrationStatus,
+		graph_state_to_spec,
+		spec_to_graph_state,
 	)
-	from migration_assistant.planning.risk_scoring import assess_risks
+	from migration_assistant.config.app_config import parse_app_config
+	from migration_assistant.llm.bedrock_runtime import require_bedrock_settings
 except ModuleNotFoundError:
 	src_path = Path(__file__).resolve().parents[1] / "src"
 	if str(src_path) not in sys.path:
@@ -25,111 +29,111 @@ except ModuleNotFoundError:
 	from migration_assistant.graph.state import (  # type: ignore[no-redef]
 		ApprovalDecision,
 		GraphState,
-		MappingRecord,
+		MigrationSpec,
 		MigrationStatus,
+		graph_state_to_spec,
+		spec_to_graph_state,
 	)
-	from migration_assistant.planning.risk_scoring import assess_risks  # type: ignore[no-redef]
+	from migration_assistant.config.app_config import parse_app_config  # type: ignore[no-redef]
+	from migration_assistant.llm.bedrock_runtime import (  # type: ignore[no-redef]
+		require_bedrock_settings,
+	)
 
-_RUNS: dict[str, GraphState] = {}
 _LOCK = Lock()
-
-
-def _seed_state(run_id: str) -> GraphState:
-	mappings = [
-		MappingRecord(
-			source_resource_id="/subscriptions/demo/resourceGroups/rg-demo/providers/"
-			"Microsoft.KeyVault/vaults/kv-demo",
-			target_logical_id="KvDemo",
-			mapping_rule_id="rule-keyvault-secretsmanager",
-			confidence=0.94,
-			notes=["Direct vault to Secrets Manager mapping available."],
-			unmapped_properties=[],
-		),
-		MappingRecord(
-			source_resource_id="/subscriptions/demo/resourceGroups/rg-demo/providers/"
-			"Microsoft.Web/sites/fn-demo",
-			target_logical_id="FnDemo",
-			mapping_rule_id="rule-functions-lambda",
-			confidence=0.79,
-			notes=["Runtime and trigger mapping is possible."],
-			unmapped_properties=["authSettingsV2"],
-		),
-		MappingRecord(
-			source_resource_id="/subscriptions/demo/resourceGroups/rg-demo/providers/"
-			"Microsoft.Network/virtualNetworks/vnet-demo",
-			target_logical_id=None,
-			mapping_rule_id=None,
-			confidence=0.41,
-			notes=["Complex peering and endpoint constraints detected."],
-			unmapped_properties=["virtualNetworkPeerings"],
-		),
-	]
-	risk_assessments = assess_risks(mappings, min_auto_migratable_confidence=0.85)
-	config: dict[str, Any] = {
-		"approval": {
-			"auto_approve": False,
-		},
-		"migration_plan": {
-			"resource_count": 3,
-			"mapping_count": 3,
-			"risk_summary": {
-				"auto_migratable": sum(
-					1 for item in risk_assessments if item.risk_level.value == "auto_migratable"
-				),
-				"needs_review": sum(
-					1 for item in risk_assessments if item.risk_level.value == "needs_review"
-				),
-				"high_risk": sum(1 for item in risk_assessments if item.risk_level.value == "high_risk"),
-			},
-			"sequence": [
-				{
-					"sequence": 1,
-					"resource_id": mappings[0].source_resource_id,
-					"resource_type": "Microsoft.KeyVault/vaults",
-					"name": "kv-demo",
-				},
-				{
-					"sequence": 2,
-					"resource_id": mappings[1].source_resource_id,
-					"resource_type": "Microsoft.Web/sites",
-					"name": "fn-demo",
-				},
-				{
-					"sequence": 3,
-					"resource_id": mappings[2].source_resource_id,
-					"resource_type": "Microsoft.Network/virtualNetworks",
-					"name": "vnet-demo",
-				},
-			],
-		},
-	}
-	return {
-		"run_id": run_id,
-		"created_at": "2026-09-25T00:00:00+00:00",
-		"mappings": mappings,
-		"risk_assessments": risk_assessments,
-		"approval": ApprovalDecision(),
-		"status": MigrationStatus.AWAITING_APPROVAL,
-		"config": config,
-	}
+_TABLE_READY = False
+_DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/migration_kb"
+_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS migration_runs (
+	run_id TEXT PRIMARY KEY,
+	payload JSONB NOT NULL,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+"""
 
 
 def get_run(run_id: str) -> GraphState:
 	with _LOCK:
-		state = _RUNS.get(run_id)
-		if state is None:
-			raise KeyError(run_id)
-		return deepcopy(state)
+		with _connect() as conn:
+			_ensure_table(conn)
+			with conn.cursor() as cur:
+				cur.execute(
+					"SELECT payload FROM migration_runs WHERE run_id = %s",
+					(run_id,),
+				)
+				row = cur.fetchone()
+
+	if row is None:
+		raise KeyError(run_id)
+
+	return _state_from_payload(row[0])
 
 
 def save_run(state: GraphState) -> None:
+	payload = _payload_from_state(state)
+	run_id = state["run_id"]
 	with _LOCK:
-		_RUNS[state["run_id"]] = deepcopy(state)
+		with _connect() as conn:
+			_ensure_table(conn)
+			with conn.cursor() as cur:
+				cur.execute(
+					"""
+					INSERT INTO migration_runs (run_id, payload, updated_at)
+					VALUES (%s, %s::jsonb, NOW())
+					ON CONFLICT (run_id)
+					DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()
+					""",
+					(run_id, json.dumps(payload)),
+				)
+			conn.commit()
 
 
 def list_runs() -> list[GraphState]:
 	with _LOCK:
-		return [deepcopy(state) for state in _RUNS.values()]
+		with _connect() as conn:
+			_ensure_table(conn)
+			with conn.cursor() as cur:
+				cur.execute(
+					"SELECT payload FROM migration_runs ORDER BY updated_at DESC, run_id ASC"
+				)
+				rows = cur.fetchall()
+
+	return [_state_from_payload(row[0]) for row in rows]
+
+
+def require_workflow_bedrock_config(config: dict[str, Any]) -> None:
+	app_config = parse_app_config(config)
+	# Current workflow requires Bedrock for mapping, risk reasoning, and reporting.
+	for agent_name in ("mapping_agent", "planning_risk_agent", "reporting_agent"):
+		require_bedrock_settings(app_config=app_config, agent_name=agent_name)
+
+
+def _database_url() -> str:
+	return os.getenv("DATABASE_URL", _DEFAULT_DATABASE_URL)
+
+
+def _connect() -> psycopg.Connection[Any]:
+	return psycopg.connect(_database_url())
+
+
+def _ensure_table(conn: psycopg.Connection[Any]) -> None:
+	global _TABLE_READY
+	if _TABLE_READY:
+		return
+	with conn.cursor() as cur:
+		cur.execute(_CREATE_TABLE_SQL)
+	conn.commit()
+	_TABLE_READY = True
+
+
+def _payload_from_state(state: GraphState) -> dict[str, Any]:
+	spec = graph_state_to_spec(state)
+	return spec.model_dump(mode="json")
+
+
+def _state_from_payload(payload: dict[str, Any]) -> GraphState:
+	spec = MigrationSpec.model_validate(payload)
+	state = spec_to_graph_state(spec)
+	return deepcopy(state)
 
 
 def dump_jsonable_state(state: GraphState) -> dict[str, Any]:

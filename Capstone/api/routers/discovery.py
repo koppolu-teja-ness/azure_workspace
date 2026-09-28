@@ -6,7 +6,13 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from api.dependencies import dump_jsonable_state, get_run, list_runs, save_run
+from api.dependencies import (
+	dump_jsonable_state,
+	get_run,
+	list_runs,
+	require_workflow_bedrock_config,
+	save_run,
+)
 from migration_assistant.graph.state import GraphState, MigrationStatus
 from migration_assistant.graph.workflow import build_graph
 
@@ -39,6 +45,11 @@ def execute_discovery(payload: DiscoveryRunRequest) -> dict[str, object]:
 		"status": MigrationStatus.DISCOVERED,
 		"config": state_config,
 	}
+
+	try:
+		require_workflow_bedrock_config(state_config)
+	except ValueError as exc:
+		raise HTTPException(status_code=400, detail=f"Invalid LLM config: {exc}") from exc
 
 	try:
 		final_state = app.invoke(initial_state)
