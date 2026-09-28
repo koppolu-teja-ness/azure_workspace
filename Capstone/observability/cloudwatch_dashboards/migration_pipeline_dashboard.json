@@ -51,7 +51,13 @@
         "region": "us-east-1",
         "period": 300,
         "metrics": [
-          ["MigrationAssistant", "AgentLatencyMs", "Agent", "mapping", { "stat": "p95" }],
+          [
+            "MigrationAssistant",
+            "AgentLatencyMs",
+            "Agent",
+            "mapping",
+            { "stat": "p95" }
+          ],
           ["...", "planning_risk", { "stat": "p95" }],
           ["...", "report", { "stat": "p95" }]
         ]

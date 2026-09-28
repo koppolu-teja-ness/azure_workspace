@@ -1,4 +1,5 @@
 # Agentic AI–Powered Azure-to-AWS Infrastructure Migration Assistant
+
 ### (Bicep → AWS CloudFormation: Key Vault, Functions & Virtual Network)
 
 ---
@@ -22,11 +23,13 @@ For a defined, high-value slice of the estate — **Key Vault, Functions, and Vi
 ## 3. Business Use Case
 
 **Who benefits:**
+
 - Organizations executing a planned Azure → AWS migration (cost optimization, M&A cloud consolidation, contractual/regulatory requirements, avoiding single-vendor lock-in).
 - Platform/DevOps teams who need a repeatable, auditable migration process instead of a one-off manual effort.
 - Security teams who need assurance that identity, secrets, and network posture are preserved (or improved) after migration — not silently weakened.
 
 **Value delivered:**
+
 - Reduces migration effort for the covered services from days/weeks of manual rewriting to a review-and-approve workflow.
 - Produces an audit trail: what was discovered, what was mapped, what a human approved, what was deployed, and what was validated.
 - Reduces the risk of security misconfiguration (over-permissive IAM, unintentionally public Function endpoints, misconfigured subnets/routes) through deterministic pre- and post-deployment checks.
@@ -48,30 +51,30 @@ Build an **Agentic AI–powered migration assistant** that can, for Azure Key Va
 
 ## 5. Scope
 
-| Azure Resource | Bicep Construct(s) | Target AWS Service(s) | Notes |
-|---|---|---|---|
-| **Key Vault** | `Microsoft.KeyVault/vaults`, secrets, keys, certificates, access policies | AWS Secrets Manager (secrets), AWS KMS (keys), AWS Certificate Manager (certs), IAM policies | Access-policy/RBAC → scoped IAM policy; soft-delete → recovery window |
-| **Functions** | `Microsoft.Web/sites` (Function App), HTTP/Timer/Blob/Queue/Service Bus triggers, bindings, app settings | AWS Lambda + API Gateway (HTTP), EventBridge (Timer), S3 event notifications (Blob), SQS (Queue) | Runtime mapping, env-var mapping, managed identity → IAM execution role |
-| **Virtual Network** | `Microsoft.Network/virtualNetworks`, subnets, NSGs, route tables, peerings, private endpoints | VPC, subnets, Security Groups + NACLs, route tables, VPC peering, VPC endpoints / PrivateLink | Service endpoints → VPC endpoints; NSG rules → SG + NACL split |
+| Azure Resource      | Bicep Construct(s)                                                                                       | Target AWS Service(s)                                                                            | Notes                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| **Key Vault**       | `Microsoft.KeyVault/vaults`, secrets, keys, certificates, access policies                                | AWS Secrets Manager (secrets), AWS KMS (keys), AWS Certificate Manager (certs), IAM policies     | Access-policy/RBAC → scoped IAM policy; soft-delete → recovery window   |
+| **Functions**       | `Microsoft.Web/sites` (Function App), HTTP/Timer/Blob/Queue/Service Bus triggers, bindings, app settings | AWS Lambda + API Gateway (HTTP), EventBridge (Timer), S3 event notifications (Blob), SQS (Queue) | Runtime mapping, env-var mapping, managed identity → IAM execution role |
+| **Virtual Network** | `Microsoft.Network/virtualNetworks`, subnets, NSGs, route tables, peerings, private endpoints            | VPC, subnets, Security Groups + NACLs, route tables, VPC peering, VPC endpoints / PrivateLink    | Service endpoints → VPC endpoints; NSG rules → SG + NACL split          |
 
-**Out of scope:** all other Azure services (App Service, SQL Database, Storage Accounts, Cosmos DB, etc.), application-code changes, data-plane migration of secret *values* through the LLM context, and bidirectional/continuous sync.
+**Out of scope:** all other Azure services (App Service, SQL Database, Storage Accounts, Cosmos DB, etc.), application-code changes, data-plane migration of secret _values_ through the LLM context, and bidirectional/continuous sync.
 
 ## 6. Why This Is Different From Existing Approaches
 
-| Existing Approach | Limitation | This Capstone |
-|---|---|---|
-| Manual rewrite by engineers | Slow, inconsistent, hard to audit | Automated, repeatable, produces an audit trail |
-| Generic IaC "transpilers" | Syntax-level translation only; no semantic cross-cloud equivalence (identity, network posture) | RAG-grounded mapping of *semantics*, not just resource names |
-| Single-shot LLM prompting ("convert this Bicep to CloudFormation") | Prone to hallucinated properties, no grounding in real mapping rules, no validation | Multi-agent pipeline with a retrieval-grounded knowledge base + deterministic validation |
-| Commercial cloud-migration tools (e.g., server/VM lift-and-shift tools) | Focused on compute/workload migration, not declarative IaC-to-IaC transformation | Purpose-built for IaC transformation of security- and network-sensitive resources |
-| Ad-hoc scripts | Stop once YAML is produced; no proof the deployed result matches the source | End-to-end: discover → transform → **deploy** → **verify** functional equivalence |
+| Existing Approach                                                       | Limitation                                                                                     | This Capstone                                                                            |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Manual rewrite by engineers                                             | Slow, inconsistent, hard to audit                                                              | Automated, repeatable, produces an audit trail                                           |
+| Generic IaC "transpilers"                                               | Syntax-level translation only; no semantic cross-cloud equivalence (identity, network posture) | RAG-grounded mapping of _semantics_, not just resource names                             |
+| Single-shot LLM prompting ("convert this Bicep to CloudFormation")      | Prone to hallucinated properties, no grounding in real mapping rules, no validation            | Multi-agent pipeline with a retrieval-grounded knowledge base + deterministic validation |
+| Commercial cloud-migration tools (e.g., server/VM lift-and-shift tools) | Focused on compute/workload migration, not declarative IaC-to-IaC transformation               | Purpose-built for IaC transformation of security- and network-sensitive resources        |
+| Ad-hoc scripts                                                          | Stop once YAML is produced; no proof the deployed result matches the source                    | End-to-end: discover → transform → **deploy** → **verify** functional equivalence        |
 
 The core differentiator is that this system treats migration as a **governed, verifiable workflow** — combining LLM reasoning for translation with deterministic tooling (linting, policy scanning, live resource comparison) and a mandatory human checkpoint before touching security- or network-critical infrastructure.
 
 ## 7. Assumptions
 
 - Source Bicep templates are available, or can be produced from a live Azure environment (e.g., via `az bicep decompile` / ARM template export).
-- An AWS account and baseline IAM permissions for the deployment agent exist; the *target* resources themselves do not yet exist.
+- An AWS account and baseline IAM permissions for the deployment agent exist; the _target_ resources themselves do not yet exist.
 - Resources outside the three in-scope services that are referenced by Bicep templates will be **flagged as dependencies requiring manual handling**, not auto-migrated.
 - Migration is one-directional (Azure → AWS) for this capstone; rollback means re-deploying the Azure source, not live bidirectional sync.
 - Naming conventions, tagging standards, and Azure-region → AWS-region mapping are defined up front in a configuration file.
@@ -82,18 +85,18 @@ The core differentiator is that this system treats migration as a **governed, ve
 
 ### 8.1 Multi-Agent Architecture (LangGraph)
 
-| Agent | Responsibility |
-|---|---|
-| Discovery Agent | Enumerates Azure Key Vault, Function App, and VNet resources (via Azure SDK/CLI) and/or ingests existing Bicep files |
-| Parser/Analyzer Agent | Parses Bicep (via `az bicep build` → ARM JSON, or AST parsing) and extracts resource graph, dependencies, and properties |
-| Mapping Agent (RAG) | Retrieves relevant mapping rules from the knowledge base and proposes the AWS-equivalent resource/property set |
-| CFN Generator Agent | Produces syntactically valid CloudFormation YAML from the mapped resource graph |
-| Static Validation Agent | Runs `cfn-lint`, `checkov`/`cfn_nag` policy scans, and schema validation on generated templates |
-| Planning & Risk-Scoring Agent | Builds the migration plan: sequencing, dependencies, auto-migratable vs. needs-review vs. high-risk objects |
-| Human Approval Gate | Presents the plan for Approve / Reject / Modify before any deployment |
-| Deployment Agent | Deploys approved templates via `boto3`/CloudFormation, in dependency order |
-| Post-Deployment Validation Agent | Compares live AWS resource state against the Azure source (structural + functional) |
-| Reporting Agent | Produces migration plan, execution, and validation reports |
+| Agent                            | Responsibility                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Discovery Agent                  | Enumerates Azure Key Vault, Function App, and VNet resources (via Azure SDK/CLI) and/or ingests existing Bicep files     |
+| Parser/Analyzer Agent            | Parses Bicep (via `az bicep build` → ARM JSON, or AST parsing) and extracts resource graph, dependencies, and properties |
+| Mapping Agent (RAG)              | Retrieves relevant mapping rules from the knowledge base and proposes the AWS-equivalent resource/property set           |
+| CFN Generator Agent              | Produces syntactically valid CloudFormation YAML from the mapped resource graph                                          |
+| Static Validation Agent          | Runs `cfn-lint`, `checkov`/`cfn_nag` policy scans, and schema validation on generated templates                          |
+| Planning & Risk-Scoring Agent    | Builds the migration plan: sequencing, dependencies, auto-migratable vs. needs-review vs. high-risk objects              |
+| Human Approval Gate              | Presents the plan for Approve / Reject / Modify before any deployment                                                    |
+| Deployment Agent                 | Deploys approved templates via `boto3`/CloudFormation, in dependency order                                               |
+| Post-Deployment Validation Agent | Compares live AWS resource state against the Azure source (structural + functional)                                      |
+| Reporting Agent                  | Produces migration plan, execution, and validation reports                                                               |
 
 ### 8.1.1 Current Implementation Status (as of 2026-09-25)
 
@@ -101,18 +104,18 @@ The architecture above is the target design. The current codebase already
 implements the full node wiring in LangGraph, with required LLM usage for
 selected reasoning/reporting nodes.
 
-| Agent | RAG usage | LLM usage | Current behavior |
-|---|---|---|---|
-| Discovery Agent | No | No | Deterministic |
-| Parser/Analyzer Agent | No | No | Deterministic |
-| Mapping Agent | Yes | Required | Rule-based mapping baseline with required Bedrock refinement |
-| CFN Generator Agent | No | No | Deterministic |
-| Static Validation Agent | No | No | Deterministic |
-| Planning & Risk-Scoring Agent | No | Required | Deterministic risk scoring baseline with required Bedrock reason enrichment |
-| Human Approval Gate | No | No | Deterministic control-flow gate |
-| Deployment Agent | No | No | Deterministic |
-| Post-Deployment Validation Agent | No | No | Deterministic |
-| Reporting Agent | No | Required | Required Bedrock summary generation |
+| Agent                            | RAG usage | LLM usage | Current behavior                                                            |
+| -------------------------------- | --------- | --------- | --------------------------------------------------------------------------- |
+| Discovery Agent                  | No        | No        | Deterministic                                                               |
+| Parser/Analyzer Agent            | No        | No        | Deterministic                                                               |
+| Mapping Agent                    | Yes       | Required  | Rule-based mapping baseline with required Bedrock refinement                |
+| CFN Generator Agent              | No        | No        | Deterministic                                                               |
+| Static Validation Agent          | No        | No        | Deterministic                                                               |
+| Planning & Risk-Scoring Agent    | No        | Required  | Deterministic risk scoring baseline with required Bedrock reason enrichment |
+| Human Approval Gate              | No        | No        | Deterministic control-flow gate                                             |
+| Deployment Agent                 | No        | No        | Deterministic                                                               |
+| Post-Deployment Validation Agent | No        | No        | Deterministic                                                               |
+| Reporting Agent                  | No        | Required  | Required Bedrock summary generation                                         |
 
 LLM calls are enabled only when configuration specifies all of:
 
@@ -174,10 +177,12 @@ Overall Status: PASS (2 warnings — see detailed report)
 ## 9. Validation & Testing Strategy
 
 **Pre-deployment (static):**
+
 - `cfn-lint` schema/syntax validation
 - `checkov` / `cfn_nag` security-policy scanning (public exposure, overly-broad IAM, unencrypted resources)
 
 **Post-deployment (live):**
+
 - Resource-count and property equivalence (secret/key counts, Lambda runtime/env-vars/trigger wiring vs. Function bindings, VPC CIDR/subnet/route-table parity)
 - Functional smoke tests (invoke each migrated Lambda endpoint, retrieve each secret via the AWS SDK, verify network reachability matching the original subnet placement)
 - Security-posture diff (nothing newly public, IAM scoped no more broadly than the source RBAC/access policy)
@@ -245,10 +250,10 @@ Overall Status: PASS (2 warnings — see detailed report)
 
 ## 14. Key Risks & Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| LLM hallucinates a CloudFormation property that doesn't exist | RAG grounding + mandatory `cfn-lint`/schema validation before any deployment step |
-| Over-permissive IAM policy generated from a broad Azure RBAC role | Least-privilege mapping rules in the knowledge base + `checkov` policy scan flags for review |
-| Secret values exposed via LLM prompt/context | Secret values never enter the LLM context; copied via direct SDK calls only |
+| Risk                                                                | Mitigation                                                                                                                 |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| LLM hallucinates a CloudFormation property that doesn't exist       | RAG grounding + mandatory `cfn-lint`/schema validation before any deployment step                                          |
+| Over-permissive IAM policy generated from a broad Azure RBAC role   | Least-privilege mapping rules in the knowledge base + `checkov` policy scan flags for review                               |
+| Secret values exposed via LLM prompt/context                        | Secret values never enter the LLM context; copied via direct SDK calls only                                                |
 | Unsupported construct (e.g., ExpressRoute peering) silently dropped | Discovery/mapping agent explicitly flags unmappable constructs as "requires manual intervention" rather than omitting them |
-| Deployment partially succeeds, leaving inconsistent state | Migration checkpoints + per-resource deployment status tracking, with defined rollback procedure |
+| Deployment partially succeeds, leaving inconsistent state           | Migration checkpoints + per-resource deployment status tracking, with defined rollback procedure                           |

@@ -10,17 +10,17 @@ python -c "from migration_assistant.graph.state import MigrationSpec; import jso
 
 ## Top-level fields
 
-| Field | Type | Produced by |
-|---|---|---|
-| `run_id` | `str` | generated at run start |
-| `source_resources` | `list[SourceResource]` | Discovery + Parser/Analyzer agents |
-| `target_resources` | `list[TargetResource]` | CFN Generator agent |
-| `mappings` | `list[MappingRecord]` | Mapping agent |
-| `risk_assessments` | `list[RiskAssessment]` | Planning & Risk-Scoring agent |
-| `approval` | `ApprovalDecision` | Human Approval Gate |
-| `validation_results` | `list[ValidationResult]` | Static + Post-Deploy Validation agents |
-| `status` | `MigrationStatus` | updated by whichever agent runs last |
-| `config` | `dict` | loaded from `config/settings.yaml` + `region_mapping.yaml` at run start |
+| Field                | Type                     | Produced by                                                             |
+| -------------------- | ------------------------ | ----------------------------------------------------------------------- |
+| `run_id`             | `str`                    | generated at run start                                                  |
+| `source_resources`   | `list[SourceResource]`   | Discovery + Parser/Analyzer agents                                      |
+| `target_resources`   | `list[TargetResource]`   | CFN Generator agent                                                     |
+| `mappings`           | `list[MappingRecord]`    | Mapping agent                                                           |
+| `risk_assessments`   | `list[RiskAssessment]`   | Planning & Risk-Scoring agent                                           |
+| `approval`           | `ApprovalDecision`       | Human Approval Gate                                                     |
+| `validation_results` | `list[ValidationResult]` | Static + Post-Deploy Validation agents                                  |
+| `status`             | `MigrationStatus`        | updated by whichever agent runs last                                    |
+| `config`             | `dict`                   | loaded from `config/settings.yaml` + `region_mapping.yaml` at run start |
 
 ## Changing this schema
 

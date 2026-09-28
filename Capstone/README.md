@@ -340,4 +340,3 @@ azure-aws-migration-assistant/
 ```
 
 For collaboration rules and merge checkpoints, see [team-work-split-plan.md](team-work-split-plan.md).
-

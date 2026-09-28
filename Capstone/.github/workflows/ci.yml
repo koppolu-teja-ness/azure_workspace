@@ -7,7 +7,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: pip install -e .[dev]
       - run: ruff check .
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - run: pip install -r requirements.txt
       - name: Apply pgvector schema
         run: |
@@ -66,4 +66,3 @@ jobs:
           PY
       - name: Run RAG health-check (skip Bedrock)
         run: python scripts/rag_health_check.py --skip-bedrock
-

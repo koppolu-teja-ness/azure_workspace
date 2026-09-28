@@ -8,7 +8,7 @@ how it is used by the mapping stage.
 Primary knowledge assets live under `knowledge_base/data/`:
 
 - `resource_type_mappings.json`: Azure resource type -> AWS resource type
-	mappings.
+  mappings.
 - `property_mappings/`: per-resource property translation rules.
 - `rbac_to_iam_rules.json`: permission model mappings.
 - `trigger_mappings.json`: event/trigger mapping references.
@@ -24,7 +24,7 @@ Selection strategy is designed as:
 
 1. Deterministic rule lookup by Azure resource type.
 2. Optional vector similarity retrieval when embeddings and pgvector are
-	 configured.
+   configured.
 3. Fallback to deterministic selection when vector retrieval is unavailable.
 
 ## Confidence and Notes
@@ -39,7 +39,6 @@ Selection strategy is designed as:
 
 - Keep mapping data changes in small PRs with fixture updates.
 - Add or update unit tests under `tests/unit/test_mapping_agent.py` and
-	related parser/generation tests when rule behavior changes.
+  related parser/generation tests when rule behavior changes.
 - Validate with sample inputs in `tests/fixtures/sample_bicep/` and inspect
-	generated outputs in `examples/sample_migration_run/`.
-
+  generated outputs in `examples/sample_migration_run/`.

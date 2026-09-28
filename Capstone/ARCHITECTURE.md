@@ -21,18 +21,18 @@ The graph wiring is defined in `src/migration_assistant/graph/workflow.py`.
 
 - Core graph structure and state contract are implemented.
 - Multiple agent paths are still in scaffold/partial mode while the capstone
-	implementation is being completed.
+  implementation is being completed.
 
 ## Core architecture components
 
-| Layer | Purpose | Key locations |
-|---|---|---|
+| Layer                  | Purpose                                                 | Key locations                               |
+| ---------------------- | ------------------------------------------------------- | ------------------------------------------- |
 | Workflow orchestration | Defines node order, conditional routing, and end states | `src/migration_assistant/graph/workflow.py` |
-| Agent implementations | Node logic per migration stage | `src/migration_assistant/agents/` |
-| Shared state contract | Typed state and migration schema | `src/migration_assistant/graph/state.py` |
-| Mapping knowledge base | Rule tables, incompatibilities, pgvector schema | `knowledge_base/` |
-| API/UI surfaces | FastAPI endpoints and dashboard/frontends | `api/`, `streamlit_app/`, `dashboard/` |
-| Observability | LLM/runtime trace and metrics integrations | `observability/` |
+| Agent implementations  | Node logic per migration stage                          | `src/migration_assistant/agents/`           |
+| Shared state contract  | Typed state and migration schema                        | `src/migration_assistant/graph/state.py`    |
+| Mapping knowledge base | Rule tables, incompatibilities, pgvector schema         | `knowledge_base/`                           |
+| API/UI surfaces        | FastAPI endpoints and dashboard/frontends               | `api/`, `streamlit_app/`, `dashboard/`      |
+| Observability          | LLM/runtime trace and metrics integrations              | `observability/`                            |
 
 ## LLM and RAG placement
 
@@ -40,23 +40,23 @@ The graph wiring is defined in `src/migration_assistant/graph/workflow.py`.
 
 - Mapping Agent (`mapping_agent.py`): optional Bedrock mapping enrichment.
 - Planning & Risk Agent (`planning_risk_agent.py`): optional Bedrock risk
-	reason enrichment.
+  reason enrichment.
 - Reporting Agent (`reporting_agent.py`): optional Bedrock summary generation.
 
 ### Agents using RAG
 
 - Mapping Agent (`mapping_agent.py`) uses `RuleBasedMappingRetriever`.
 - Retriever behavior is hybrid:
-	- deterministic JSON/rule-table fallback always available,
-	- optional pgvector similarity retrieval when DB/embeddings are configured.
+  - deterministic JSON/rule-table fallback always available,
+  - optional pgvector similarity retrieval when DB/embeddings are configured.
 
 ## Runtime behavior
 
 - LLM-capable modules use a shared Bedrock runtime helper contract.
 - Required Bedrock settings are validated by `require_bedrock_settings(...)`
-	where used.
+  where used.
 - LLM-capable agent implementations append `llm_traces` into graph state when
-	their LLM path executes.
+  their LLM path executes.
 
 ## Configuration contract for LLM execution
 

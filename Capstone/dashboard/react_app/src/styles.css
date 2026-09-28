@@ -23,7 +23,11 @@ body {
   font-family: "Archivo Expanded", "Segoe UI", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at 15% 15%, rgba(234, 88, 12, 0.16), transparent 32%),
+    radial-gradient(
+      circle at 15% 15%,
+      rgba(234, 88, 12, 0.16),
+      transparent 32%
+    ),
     radial-gradient(circle at 80% 5%, rgba(15, 118, 110, 0.2), transparent 28%),
     linear-gradient(145deg, #fff8ef 0%, #eef7f5 58%, #f3f5ff 100%);
   min-height: 100vh;
@@ -262,7 +266,10 @@ textarea:focus {
   text-align: left;
   background: rgba(255, 255, 255, 0.86);
   cursor: pointer;
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .run-card:hover {

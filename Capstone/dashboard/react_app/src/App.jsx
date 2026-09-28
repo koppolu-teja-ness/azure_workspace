@@ -13,7 +13,9 @@ const RUN_SORT = {
 };
 
 function Badge({ value }) {
-  return <span className={`badge badge-${value.replace(/_/g, "-")}`}>{value}</span>;
+  return (
+    <span className={`badge badge-${value.replace(/_/g, "-")}`}>{value}</span>
+  );
 }
 
 function StatusPill({ value }) {
@@ -111,7 +113,7 @@ function App() {
   const riskRows = runData?.risk_assessments || [];
   const pendingApprovalsCount = useMemo(
     () => runs.filter((item) => item.status === "awaiting_approval").length,
-    [runs]
+    [runs],
   );
   const sortedRuns = useMemo(() => {
     const list = [...runs];
@@ -134,7 +136,9 @@ function App() {
         return String(a.run_id).localeCompare(String(b.run_id));
       });
     }
-    return list.sort((a, b) => String(a.run_id).localeCompare(String(b.run_id)));
+    return list.sort((a, b) =>
+      String(a.run_id).localeCompare(String(b.run_id)),
+    );
   }, [runs, runSort]);
   const displayedRuns = useMemo(() => {
     if (!showAwaitingOnly) {
@@ -144,7 +148,7 @@ function App() {
   }, [showAwaitingOnly, sortedRuns]);
   const highRiskCount = useMemo(
     () => riskRows.filter((item) => item.risk_level === "high_risk").length,
-    [riskRows]
+    [riskRows],
   );
 
   async function onSubmitDecision(event) {
@@ -182,9 +186,13 @@ function App() {
           <p className="eyebrow">Phase 2 / Person A</p>
           <h1>
             Migration Control Deck
-            <span className="pending-badge">Pending approvals: {pendingApprovalsCount}</span>
+            <span className="pending-badge">
+              Pending approvals: {pendingApprovalsCount}
+            </span>
           </h1>
-          <p className="subtitle">Planning and human approval gate for Azure to AWS migration runs</p>
+          <p className="subtitle">
+            Planning and human approval gate for Azure to AWS migration runs
+          </p>
         </div>
         <div className="api-hint">API: {API_BASE}</div>
       </header>
@@ -209,7 +217,10 @@ function App() {
 
         <label className="run-selector">
           <span>Run</span>
-          <select value={runId} onChange={(event) => setRunId(event.target.value)}>
+          <select
+            value={runId}
+            onChange={(event) => setRunId(event.target.value)}
+          >
             {runs.map((run) => (
               <option key={run.run_id} value={run.run_id}>
                 {run.run_id}
@@ -233,7 +244,10 @@ function App() {
             </label>
             <label className="sort-control">
               <span>Sort</span>
-              <select value={runSort} onChange={(event) => setRunSort(event.target.value)}>
+              <select
+                value={runSort}
+                onChange={(event) => setRunSort(event.target.value)}
+              >
                 <option value={RUN_SORT.HIGH_RISK}>High risk first</option>
                 <option value={RUN_SORT.STATUS}>Status priority</option>
                 <option value={RUN_SORT.RUN_ID}>Run id</option>
@@ -265,7 +279,9 @@ function App() {
             );
           })}
           {displayedRuns.length === 0 ? (
-            <article className="empty-state">No runs match the current filter.</article>
+            <article className="empty-state">
+              No runs match the current filter.
+            </article>
           ) : null}
         </div>
       </section>
@@ -278,7 +294,10 @@ function App() {
         <main className="panel-grid">
           <MetricCard label="Resources" value={plan.resource_count || 0} />
           <MetricCard label="Auto" value={riskSummary.auto_migratable || 0} />
-          <MetricCard label="Needs Review" value={riskSummary.needs_review || 0} />
+          <MetricCard
+            label="Needs Review"
+            value={riskSummary.needs_review || 0}
+          />
           <MetricCard label="High Risk" value={riskSummary.high_risk || 0} />
 
           <section className="panel reveal span-2">
@@ -357,7 +376,10 @@ function App() {
 
               <label>
                 Decision
-                <select value={decision} onChange={(event) => setDecision(event.target.value)}>
+                <select
+                  value={decision}
+                  onChange={(event) => setDecision(event.target.value)}
+                >
                   <option value="approved">approved</option>
                   <option value="rejected">rejected</option>
                   <option value="modified">modified</option>

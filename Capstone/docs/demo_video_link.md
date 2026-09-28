@@ -30,4 +30,3 @@ When a new recording is available, update this file with:
 - Recording date
 - Commit SHA or branch used in the demo
 - Short changelog of what the demo validates
-

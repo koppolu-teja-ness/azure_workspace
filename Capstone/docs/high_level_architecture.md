@@ -6,6 +6,7 @@ visual reference and implementation-oriented notes.
 ## Diagram
 
 Static diagram asset:
+
 - [architecture_diagram.png](architecture_diagram.png)
 
 ## System Context

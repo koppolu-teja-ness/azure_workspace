@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
@@ -21,4 +21,3 @@ jobs:
         run: |
           docker build -f infra/docker/api.Dockerfile -t migration-assistant-api:main .
           docker build -f infra/docker/dashboard.Dockerfile -t migration-assistant-dashboard:main .
-

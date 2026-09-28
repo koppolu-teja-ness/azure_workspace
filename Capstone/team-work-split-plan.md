@@ -1,13 +1,14 @@
 # Team Work Split Plan
+
 ### Agentic AI–Powered Azure-to-AWS Infrastructure Migration Assistant
 
 ---
 
 ## Branch Structure
 
-| Branch | Owner | Focus |
-|---|---|---|
-| `feature/source-pipeline` | Person A | Azure-understanding side: discovery, parsing, mapping, planning, approval UI |
+| Branch                    | Owner    | Focus                                                                           |
+| ------------------------- | -------- | ------------------------------------------------------------------------------- |
+| `feature/source-pipeline` | Person A | Azure-understanding side: discovery, parsing, mapping, planning, approval UI    |
 | `feature/target-pipeline` | Person B | AWS-generation side: CloudFormation generation, validation, deployment, testing |
 
 The two branches meet at one shared contract — a **Migration Spec** (JSON) that Person A's pipeline produces and Person B's pipeline consumes. Agreeing on this schema in Phase 0 is what allows both people to work in parallel without blocking each other.
@@ -29,12 +30,14 @@ Both team members work together before splitting:
 ## Phase 1 — Core Build
 
 ### Person A — `feature/source-pipeline`
+
 - Discovery Agent: enumerate Azure Key Vault, Function App, and VNet resources; ingest existing Bicep files
 - Parser/Analyzer Agent: parse Bicep → ARM JSON → resource graph
 - Populate RAG knowledge base content (mapping tables, incompatibilities, best practices)
 - Mapping Agent: produce the Migration Spec output
 
 ### Person B — `feature/target-pipeline`
+
 - CFN Generator Agent: build against 2–3 hand-written sample Migration Specs (so work isn't blocked waiting on Person A)
 - Static Validation Agent: integrate `cfn-lint` and `checkov`
 - Deployment Agent skeleton: `boto3` wrapper, no live deployment yet
@@ -46,10 +49,12 @@ Both team members work together before splitting:
 ## Phase 2 — Wire Real Integration
 
 ### Person A — `feature/source-pipeline`
+
 - Planning & Risk-Scoring Agent: classify objects as auto-migratable / needs-review / high-risk
 - Human Approval Gate: build the approve/reject/modify UI (Streamlit or React)
 
 ### Person B — `feature/target-pipeline`
+
 - Swap sample specs for Person A's real Migration Spec output
 - Complete the Deployment Agent against the sandbox AWS account
 - Post-Deployment Validation Agent: structural equivalence checks (resource counts, property parity)
@@ -61,10 +66,12 @@ Both team members work together before splitting:
 ## Phase 3 — Depth & Rigor
 
 ### Person A — `feature/source-pipeline`
+
 - Migration Test Suite: schema compatibility, dependency/referential integrity checks, missing-object detection
 - Risk report and migration plan report generation
 
 ### Person B — `feature/target-pipeline`
+
 - Functional smoke tests: invoke migrated Lambdas, fetch secrets, verify network reachability
 - Security-posture diff checks (no new public exposure, no IAM over-broadening)
 - Execution & validation report generation
@@ -138,8 +145,8 @@ This checkpoint confirms the Person B Phase 2 scope has been implemented in the 
 - **Swap sample specs for real pipeline output path:** API run lifecycle no longer auto-seeds synthetic runs; real runs are persisted and consumed (`/runs/execute` and approval endpoints operate on actual stored graph state).
 - **Target-side contract execution endpoint:** added `POST /runs/execute-target` to accept a full `MigrationSpec` payload and run only target-side stages (CFN generation, static validation, deployment, post-deploy validation, reporting).
 - **Deployment Agent completion:** deployment now supports two modes:
-	- dry-run preview (default, safe)
-	- optional live CloudFormation change set creation/execution when `deployment.enable_live_deploy=true`
+  - dry-run preview (default, safe)
+  - optional live CloudFormation change set creation/execution when `deployment.enable_live_deploy=true`
 - **Post-Deployment Validation structural checks:** implemented resource-count equivalence and property-parity checks, producing `post_deploy` validation results and setting final status to `failed` on hard structural mismatches.
 
 ### Verification Evidence
@@ -147,8 +154,8 @@ This checkpoint confirms the Person B Phase 2 scope has been implemented in the 
 - Targeted unit tests passed: `10 passed`
 - End-to-end integration test passed: `1 passed`
 - Commands run:
-	- `python -m pytest -q tests/unit/test_deployment_agent.py tests/unit/test_post_deploy_validation_agent.py tests/unit/test_static_validation_agent.py tests/unit/test_workflow_skeleton.py`
-	- `python -m pytest -q tests/integration/test_end_to_end_pipeline.py`
+  - `python -m pytest -q tests/unit/test_deployment_agent.py tests/unit/test_post_deploy_validation_agent.py tests/unit/test_static_validation_agent.py tests/unit/test_workflow_skeleton.py`
+  - `python -m pytest -q tests/integration/test_end_to_end_pipeline.py`
 
 ---
 
@@ -160,24 +167,24 @@ been implemented and validated.
 ### Person A (`feature/source-pipeline`) — Completed
 
 - Migration Test Suite implemented for:
-	- schema compatibility
-	- dependency/referential integrity
-	- missing-object detection
+  - schema compatibility
+  - dependency/referential integrity
+  - missing-object detection
 - Reporting outputs implemented:
-	- migration plan report
-	- risk report
+  - migration plan report
+  - risk report
 
 ### Person B (`feature/target-pipeline`) — Completed
 
 - Post-deploy validation expanded with:
-	- functional smoke checks (Lambda/secret/network heuristics)
-	- security posture diff checks (public exposure + IAM wildcard broadening)
+  - functional smoke checks (Lambda/secret/network heuristics)
+  - security posture diff checks (public exposure + IAM wildcard broadening)
 - Reporting outputs implemented:
-	- execution report
-	- validation report
+  - execution report
+  - validation report
 - Observability wiring added:
-	- tracing config helper for LangSmith/LangFuse
-	- baseline CloudWatch and Grafana dashboard assets
+  - tracing config helper for LangSmith/LangFuse
+  - baseline CloudWatch and Grafana dashboard assets
 
 ### Verification Evidence
 
@@ -195,14 +202,14 @@ been implemented and validated.
 
 Use this checklist as the go/no-go gate before final capstone handoff.
 
-- [ ] Merge `dev` into `main` after final review. *(release management action)*
+- [ ] Merge `dev` into `main` after final review. _(release management action)_
 - [x] Execute one full end-to-end run across Key Vault, Function App, and VNet inputs.
 - [x] Verify API and dashboard integration flows are stable for discovery, approval, run execution, and reports.
 - [x] Validate Docker build/run for API and dashboard images.
 - [x] Confirm CI pipeline is green on final integration branch.
 - [x] Refresh architecture and developer docs to match implemented behavior.
 - [x] Publish final demo artifacts (video link, example outputs, run evidence).
-- [ ] Tag release candidate. *(known limitations/open risks captured in `docs/known_limitations.md`; tagging pending maintainer action)*
+- [ ] Tag release candidate. _(known limitations/open risks captured in `docs/known_limitations.md`; tagging pending maintainer action)_
 
 ### Suggested Exit Evidence
 

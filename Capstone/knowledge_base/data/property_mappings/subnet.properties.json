@@ -5,9 +5,7 @@
       "azure_property": "addressPrefix",
       "aws_property": "CidrBlock",
       "required": true,
-      "notes": [
-        "CIDR overlap checks are mandatory before deployment."
-      ]
+      "notes": ["CIDR overlap checks are mandatory before deployment."]
     },
     {
       "azure_property": "networkSecurityGroup",

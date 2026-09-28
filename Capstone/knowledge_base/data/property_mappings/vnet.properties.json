@@ -5,9 +5,7 @@
       "azure_property": "addressSpace",
       "aws_property": "CidrBlock",
       "required": true,
-      "notes": [
-        "VNet address prefixes should map to VPC CIDR allocation."
-      ]
+      "notes": ["VNet address prefixes should map to VPC CIDR allocation."]
     }
   ]
 }
